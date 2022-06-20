@@ -86,7 +86,7 @@ def BlockFinder(xArray):
     return Blocks
 
 #!!!Once case statments are released, change this
-def AntiNodeHighlander(blocks,xArray,yArray,Min,Max,IsMax):
+def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
     xRevAntiNode = np.array([])
     yRevAntiNode = np.array([])
     
@@ -95,84 +95,37 @@ def AntiNodeHighlander(blocks,xArray,yArray,Min,Max,IsMax):
         if i == 0:
             pass
         else:
-            Complete = False
             start = int(sum(blocks[0:i-1]))
             end = int(sum(blocks[0:i]))
             xTrial = xArray[start:end]
             yTrial = yArray[start:end] 
             
-            MinBound = min(xTrial) - Min
-            MaxBound = Max - max(xTrial)
-                            
-            if MinBound < MaxBound:
-                crankMax = max(xTrial) - 2
-            elif MinBound > MaxBound:
-                crankMax = min(xTrial) - 2
-            else:
-                crankMax = max(xTrial) - 2
-            
+            print(xTrial)
+                        
             #!!!Find a more resource efficient way to do this
             #!!Sort the potential crankMax loop
             if len(xTrial) == 1:
                 xRevAntiNode = np.append(xRevAntiNode,xTrial)
                 yRevAntiNode = np.append(yRevAntiNode,yTrial)
             
-            elif IsMax == True:
-                crank = 2
-                while Complete == False:
-                
-                        
-                    MaxLocsX, MaxLocsY, Junk1, Junk2 = FindAntiNode(xTrial,yTrial,crank)
-                    print(MaxLocsX)
-                    if len(MaxLocsX) > 1:
-                        crank +=1
-                        if crank > crankMax:
-                            crank = crankMax
-                        else:
-                            pass
-                        
-                    elif len(MaxLocsX) == 1:
-                        xRevAntiNode = np.append(xRevAntiNode,MaxLocsX)
-                        yRevAntiNode = np.append(yRevAntiNode,MaxLocsY) 
-                        Complete = True
-                        
+            elif len(xTrial) > 1:
+                MinVal = 100
+                xAccept = xTrial[0]
+                yAccept = yTrial[0]
+                for k  in range(len(yTrial)):
+                    loc = np.where(yFull == yTrial[k])[0][0]
+                    m2ndDer = (yFull[loc+1] - (2 * yFull[loc]) + yFull[loc-1])
+                    print(m2ndDer)
+                    if abs(m2ndDer) < MinVal:
+                        MinVal = abs(m2ndDer)
+                        yAccept = yTrial[k]
+                        xAccept = xTrial[k]
                     else:
-                        crank -=1
-                        MaxLocsX, MaxLocsY, Junk1, Junk2 = FindAntiNode(xTrial,yTrial,crank)
-                        xRevAntiNode = np.append(xRevAntiNode,MaxLocsX)
-                        yRevAntiNode = np.append(yRevAntiNode,MaxLocsY)
-                        Complete = True
-                     
-                crank = 2
-                Complete = False
+                        pass
+                xRevAntiNode = np.append(xRevAntiNode,xAccept)
+                yRevAntiNode = np.append(yRevAntiNode,yAccept)
+                 
                 
-                      
-            elif IsMax == False:
-                crank = 2
-                while Complete == False:
-                   Junk1, Junk2, MinLocsX, MinLocsY = FindAntiNode(xTrial,yTrial,crank)
-                   
-                   if len(MinLocsX) > 1:
-                       crank +=1    
-                       if crank > crankMax:
-                           crank = crankMax
-                       else:
-                           pass
-                       
-                   elif len(MinLocsX) == 1:
-                       xRevAntiNode = np.append(xRevAntiNode,MinLocsX)
-                       yRevAntiNode = np.append(yRevAntiNode,MinLocsY) 
-                       Complete = True
-                       
-                   else:
-                       crank -=1
-                       Junk1, Junk2, MinLocsX, MinLocsY = FindAntiNode(xTrial,yTrial,crank)
-                       xRevAntiNode = np.append(xRevAntiNode,MinLocsX)
-                       yRevAntiNode = np.append(yRevAntiNode,MinLocsY) 
-                       Complete = True
-                
-                crank = 2
-                Complete = False
                 
             else:
                 print('What?')
@@ -259,7 +212,7 @@ def FindAntiNode(xArray,yArray,RangeMax):
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\Data'))
 xMin = 200
-xMax = 852
+xMax = 875
 
 #The next three loops remove the .txt from the files strings, this is for a cleaner title for the graph
 for i in range(len(files)):
@@ -283,8 +236,8 @@ for i in range(len(files)):
     vars()['MinBlocks'+str(i)] = BlockFinder(vars()['MinX'+str(i)])
 
 for i in range(len(files)):
-    vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)] = AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)],xMin,xMax,True)
-    vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)] = AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MinX'+str(i)], vars()['MinY'+str(i)],xMin,xMax,False)
+    vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)] = AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
+    vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)] = AntiNodeHighlander(vars()['MinBlocks'+str(i)],vars()['MinX'+str(i)], vars()['MinY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
 
 #All the xValues are the same, only need to do this once
 xP = np.linspace(min(vars()[files[0]+'T'][0]),max(vars()[files[0]+'T'][0]),10001)
