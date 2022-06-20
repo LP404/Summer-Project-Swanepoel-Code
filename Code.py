@@ -6,16 +6,6 @@ from scipy.signal import find_peaks
 
 #dt = 1
 
-def Trim(xArray,yArray,start,end):
-    delPoints = np.where((xArray < start) | (xArray > end))[0]
-    
-    xArray = np.delete(xArray,delPoints)
-    yArray = np.delete(yArray,delPoints)
-    
-    
-    return xArray, yArray
-
-
 # def FindAntiNode2(xArray,yArray):
 #     MaxLocsX = np.array([])
 #     MaxLocsY = np.array([])
@@ -47,27 +37,167 @@ def Trim(xArray,yArray,start,end):
 
 #     return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
 
+def Trim(xArray,yArray,start,end):
+    delPoints = np.where((xArray < start) | (xArray > end))[0]
+    
+    xArray = np.delete(xArray,delPoints)
+    yArray = np.delete(yArray,delPoints)
+    
+    
+    return xArray, yArray
 
 
-def DistanceChecker(Array):
-    BlockLengths = np.array([])
-    PreviousGap = Array[1] - Array[0]
-    BlockCount = 0
-    for i in range(2,len(Array)):
-        Gap = abs(Array[i] - Array[i-1])
-        if Gap >= 3*PreviousGap :
-            BlockLengths = np.append(BlockLengths,BlockCount)
-            BlockCount = 0
+
+def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
+    
+    #Loc = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
+    Loc = max(np.where(np.around(yArray,0) == 50)[0])
+    
+    #50 is currently arbiraty, but frindges don't usually appear until after 50% transmission
+    
+    x1 = np.append(xArray[0:Loc],AntiNodeX)
+    y1 = np.append(yArray[0:Loc],AntiNodeY)
+        
+    Sort = np.argsort(x1)
+    x1 = x1[Sort[::1]]
+    y1 = y1[Sort[::1]]
+        
+    yInterp = np.interp(xInterp,x1,y1)
+    
+    return yInterp
+
+
+def BlockFinder(xArray):
+    gap = np.diff(xArray)
+    BlockLength = 0
+    Blocks = np.array([])
+    for i in range(len(gap)):
+        
+        if gap[i] < np.mean(gap):
+            BlockLength += 1
+            if i == (len(gap) - 1):
+                Blocks = np.append(Blocks, (BlockLength + 1))
+            else:
+                pass
         else:
-            BlockCount += 1
-            
-            PreviousGap = Gap
-            Gap = 0
+            Blocks = np.append(Blocks, (BlockLength + 1))
+            BlockLength = 0
     
-    
-    return BlockLengths
+    return Blocks
 
-def FindAntiNode(xArray,yArray):
+#!!!Once case statments are released, change this
+def AntiNodeHighlander(blocks,xArray,yArray,Min,Max,IsMax):
+    xRevAntiNode = np.array([])
+    yRevAntiNode = np.array([])
+    
+    
+    for i in range(len(blocks)+1):
+        if i == 0:
+            pass
+        else:
+            Complete = False
+            start = int(sum(blocks[0:i-1]))
+            end = int(sum(blocks[0:i]))
+            xTrial = xArray[start:end]
+            yTrial = yArray[start:end] 
+            
+            MinBound = min(xTrial) - Min
+            MaxBound = Max - max(xTrial)
+                            
+            if MinBound < MaxBound:
+                crankMax = max(xTrial) - 2
+            elif MinBound > MaxBound:
+                crankMax = min(xTrial) - 2
+            else:
+                crankMax = max(xTrial) - 2
+            
+            #!!!Find a more resource efficient way to do this
+            #!!Sort the potential crankMax loop
+            if len(xTrial) == 1:
+                xRevAntiNode = np.append(xRevAntiNode,xTrial)
+                yRevAntiNode = np.append(yRevAntiNode,yTrial)
+            
+            elif IsMax == True:
+                crank = 2
+                while Complete == False:
+                
+                        
+                    MaxLocsX, MaxLocsY, Junk1, Junk2 = FindAntiNode(xTrial,yTrial,crank)
+                    print(MaxLocsX)
+                    if len(MaxLocsX) > 1:
+                        crank +=1
+                        if crank > crankMax:
+                            crank = crankMax
+                        else:
+                            pass
+                        
+                    elif len(MaxLocsX) == 1:
+                        xRevAntiNode = np.append(xRevAntiNode,MaxLocsX)
+                        yRevAntiNode = np.append(yRevAntiNode,MaxLocsY) 
+                        Complete = True
+                        
+                    else:
+                        crank -=1
+                        MaxLocsX, MaxLocsY, Junk1, Junk2 = FindAntiNode(xTrial,yTrial,crank)
+                        xRevAntiNode = np.append(xRevAntiNode,MaxLocsX)
+                        yRevAntiNode = np.append(yRevAntiNode,MaxLocsY)
+                        Complete = True
+                     
+                crank = 2
+                Complete = False
+                
+                      
+            elif IsMax == False:
+                crank = 2
+                while Complete == False:
+                   Junk1, Junk2, MinLocsX, MinLocsY = FindAntiNode(xTrial,yTrial,crank)
+                   
+                   if len(MinLocsX) > 1:
+                       crank +=1    
+                       if crank > crankMax:
+                           crank = crankMax
+                       else:
+                           pass
+                       
+                   elif len(MinLocsX) == 1:
+                       xRevAntiNode = np.append(xRevAntiNode,MinLocsX)
+                       yRevAntiNode = np.append(yRevAntiNode,MinLocsY) 
+                       Complete = True
+                       
+                   else:
+                       crank -=1
+                       Junk1, Junk2, MinLocsX, MinLocsY = FindAntiNode(xTrial,yTrial,crank)
+                       xRevAntiNode = np.append(xRevAntiNode,MinLocsX)
+                       yRevAntiNode = np.append(yRevAntiNode,MinLocsY) 
+                       Complete = True
+                
+                crank = 2
+                Complete = False
+                
+            else:
+                print('What?')
+        
+        
+        
+
+    return xRevAntiNode, yRevAntiNode
+
+def FindAntiNode(xArray,yArray,RangeMax):
+    
+    #RangeMaxNumbers
+    #2 is the lowest number
+    # Nearest Border - 2 is theoretically the highest but use 15
+    #Current setting is arbitary
+    
+    #!!!Add try catch later
+    
+    if RangeMax < 2:
+        RangeMax = 2
+    elif RangeMax > (int(len(xArray)/2) - 2):
+        RangeMax = (int(len(xArray)/2) - 2)
+    else:
+        pass
+    
     MaxLocsX = np.array([])
     MaxLocsY = np.array([])
     MinLocsX = np.array([])
@@ -75,12 +205,14 @@ def FindAntiNode(xArray,yArray):
     
     MinAllowed = False
     MaxAllowed = False
-    #2 is the lowest number
-    RangeMax = 2
+    
     
     #0 is before a potential anti note, 1 is what is being tested to be the antinode, and 2 is the point after the potential antinode
     
     #max(np.where(vars()[files[0]][1] < 1)[0]) Add an engagment mechanisim past 250nm
+    #WTF is engement?
+    
+    
     for i in range(5,len(xArray)-5):
         if i != 0:
             m1 = (yArray[i] - yArray[i-1]) / (xArray[i] - xArray[i-1])
@@ -126,7 +258,8 @@ def FindAntiNode(xArray,yArray):
 
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\Data'))
-
+xMin = 200
+xMax = 852
 
 #The next three loops remove the .txt from the files strings, this is for a cleaner title for the graph
 for i in range(len(files)):
@@ -137,24 +270,28 @@ for i in range(len(files)):
     vars()[files[i]] = np.loadtxt(open(path + "\\" + files[i] + ".txt", "rb"), delimiter=",",skiprows = 2).T
 
 for i in range(len(files)):
-    vars()[files[i]+'T'] = Trim(vars()[files[i]][0],vars()[files[i]][1],200,850)
+    vars()[files[i]+'T'] = Trim(vars()[files[i]][0],vars()[files[i]][1],xMin,xMax)
 
 #T stands for Truncated
     
     
 for i in range(len(files)):
-    vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)], vars()['MinY'+str(i)] = FindAntiNode(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1])
+    vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)], vars()['MinY'+str(i)] = FindAntiNode(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],10)
+
+for i in range(len(files)):
+    vars()['MaxBlocks'+str(i)] = BlockFinder(vars()['MaxX'+str(i)])
+    vars()['MinBlocks'+str(i)] = BlockFinder(vars()['MinX'+str(i)])
+
+for i in range(len(files)):
+    vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)] = AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)],xMin,xMax,True)
+    vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)] = AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MinX'+str(i)], vars()['MinY'+str(i)],xMin,xMax,False)
 
 #All the xValues are the same, only need to do this once
 xP = np.linspace(min(vars()[files[0]+'T'][0]),max(vars()[files[0]+'T'][0]),10001)
 
 for i in range(len(files)):
-    
-    vars()['yPMaxs'+str(i)] = np.interp(xP,vars()['MaxX'+str(i)],vars()['MaxY'+str(i)])
-    vars()['yPMins'+str(i)] = np.interp(xP,vars()['MinX'+str(i)],vars()['MinY'+str(i)])
-    
-    
-
+    vars()['yPMax'+str(i)] = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)])
+    vars()['yPMin'+str(i)] = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)])
 
 
 for i in range(len(files)):
@@ -166,9 +303,9 @@ for i in range(len(files)):
     plt.title(files[i])
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("Transmission/Absorbance")
-    # plt.scatter(vars()['MaxX'+str(i)],vars()['MaxY'+str(i)], color = 'black', marker = "x")
-    # plt.scatter(vars()['MinX'+str(i)],vars()['MinY'+str(i)], color = 'red', marker = "x")
-    # plt.plot(xP,vars()['yPMaxs'+str(i)], color = 'black', linestyle="dashed")
-    # plt.plot(xP,vars()['yPMins'+str(i)], color = 'red', linestyle="dashed")
+    plt.scatter(vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)], color = 'black', marker = "x")
+    plt.scatter(vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)], color = 'red', marker = "x")
+    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dashed")
+    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dashed")
     
     
