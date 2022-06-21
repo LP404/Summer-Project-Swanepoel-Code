@@ -50,7 +50,10 @@ def Trim(xArray,yArray,start,end):
 
 def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
     
-    #Loc = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
+    Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
+    Wave0 = xArray[Loc0]
+    
+    
     Loc = max(np.where(np.around(yArray,0) == 50)[0])
     
     #50 is currently arbiraty, but frindges don't usually appear until after 50% transmission
@@ -64,7 +67,7 @@ def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
         
     yInterp = np.interp(xInterp,x1,y1)
     
-    return yInterp
+    return yInterp,Wave0
 
 
 def BlockFinder(xArray):
@@ -100,7 +103,6 @@ def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
             xTrial = xArray[start:end]
             yTrial = yArray[start:end] 
             
-            print(xTrial)
                         
             #!!!Find a more resource efficient way to do this
             #!!Sort the potential crankMax loop
@@ -115,7 +117,6 @@ def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
                 for k  in range(len(yTrial)):
                     loc = np.where(yFull == yTrial[k])[0][0]
                     m2ndDer = (yFull[loc+1] - (2 * yFull[loc]) + yFull[loc-1])
-                    print(m2ndDer)
                     if abs(m2ndDer) < MinVal:
                         MinVal = abs(m2ndDer)
                         yAccept = yTrial[k]
@@ -130,6 +131,13 @@ def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
             else:
                 print('What?')
         
+        
+        try:
+            FindLoc = np.where(yRevAntiNode < 20)[0][0]
+            xRevAntiNode = np.delte(xRevAntiNode,FindLoc)
+            yRevAntiNode = np.delte(yRevAntiNode,FindLoc)
+        except:
+            pass
         
         
 
@@ -209,10 +217,14 @@ def FindAntiNode(xArray,yArray,RangeMax):
     return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
 
 
+#Importing and setting up data for processing
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\Data'))
 xMin = 200
 xMax = 875
+
+#Provisional will change later
+nSub = 1.75
 
 #The next three loops remove the .txt from the files strings, this is for a cleaner title for the graph
 for i in range(len(files)):
@@ -243,12 +255,16 @@ for i in range(len(files)):
 xP = np.linspace(min(vars()[files[0]+'T'][0]),max(vars()[files[0]+'T'][0]),10001)
 
 for i in range(len(files)):
-    vars()['yPMax'+str(i)] = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)])
-    vars()['yPMin'+str(i)] = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)])
+    vars()['yPMax'+str(i)], vars()['MaxLocWave'+str(i)]  = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)])
+    vars()['yPMin'+str(i)], vars()['MinLocWave'+str(i)] = FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()[files[i]+'T'][1],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)])
+
+
+
+
 
 
 for i in range(len(files)):
-    plt.figure(i)
+    plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
     plt.minorticks_on()
     plt.grid(b=True, which='major', color='k', linestyle='-')
     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
@@ -256,9 +272,9 @@ for i in range(len(files)):
     plt.title(files[i])
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("Transmission/Absorbance")
-    plt.scatter(vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)], color = 'black', marker = "x")
-    plt.scatter(vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)], color = 'red', marker = "x")
-    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dashed")
-    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dashed")
+    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x")
+    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x")
+    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted")
+    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted")
     
     
