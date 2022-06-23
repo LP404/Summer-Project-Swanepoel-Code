@@ -34,26 +34,23 @@ import scipy as sp
 
 #     return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
 
-def Trim(xArray,yArray,start,end):
-    delPoints = np.where((xArray < start) | (xArray > end))[0]
-    
-    xArray = np.delete(xArray,delPoints)
-    yArray = np.delete(yArray,delPoints)
+def Trim(Array,start,end):
+    delPoints = np.where((Array[0] < start) | (Array[0] > end))[0]
     
     
-    return xArray, yArray
+    newArray = np.array([np.delete(Array[0],delPoints),np.delete(Array[1],delPoints)])
+    
+    return newArray
 
 
 
 def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
     
-    Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
-    Wave0 = xArray[Loc0]
+    #Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
     
+    Loc = max(np.where(np.around(yArray,2) == 0.50)[0])
     
-    Loc = max(np.where(np.around(yArray,0) == 50)[0])
-    
-    #50 is currently arbiraty, but frindges don't usually appear until after 50% transmission
+    #0.5 is currently arbiraty, but frindges don't usually appear until after 50% transmission
     
     x1 = np.append(xArray[0:Loc],AntiNodeX)
     y1 = np.append(yArray[0:Loc],AntiNodeY)
@@ -64,7 +61,7 @@ def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
         
     yInterp = np.interp(xInterp,x1,y1)
     
-    return yInterp,Wave0
+    return yInterp
 
 
 def BlockFinder(xArray):
@@ -100,7 +97,7 @@ def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
             xTrial = xArray[start:end]
             yTrial = yArray[start:end] 
             
-            if max(yTrial) < 20:
+            if max(yTrial) < 0.2:
                 pass
             else:
                 #!!!Find a more resource efficient way to do this
@@ -164,7 +161,7 @@ def FindAntiNode(xArray,yArray,RangeMax):
     #max(np.where(vars()[files[0]][1] < 1)[0]) Add an engagment mechanisim past 250nm
     #WTF is engement?
     
-    
+    #These need to be at 5 and I don't remember why
     for i in range(5,len(xArray)-5):
         if i != 0:
             m1 = (yArray[i] - yArray[i-1]) / (xArray[i] - xArray[i-1])
@@ -207,6 +204,31 @@ def FindAntiNode(xArray,yArray,RangeMax):
             
     return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
 
+def DYThorLabs(Array):
+    
+      newXarray = np.array([])
+      newYarray = np.array([])
+    
+      newXarray = np.append(newXarray,Array[0][0])
+      backTotalCount = 0
+      backTotal = 0
+    
+      for i in range(1,len(Array[0])):
+          if Array[0][i] == Array[0][i-1]:
+             backTotalCount += 1
+          else:   
+             newXarray = np.append(newXarray,Array[0][i])
+             newYarray = np.append(newYarray,np.mean(Array[1][backTotal:i]))
+             backTotal = backTotalCount + 1
+    
+    
+      backTotal = backTotalCount + 1
+      newYarray = np.append(newYarray,np.mean(Array[1][backTotal:i]))
+    
+      FixedArray = np.array([newXarray,newYarray])
+        
+      return FixedArray
+
 
 def nFinder(TM,Tm,lamb,s):
     
@@ -236,6 +258,10 @@ def xFinder(n,s,TM,Tm):
     
     return x
 
+def Sub_nFinder(T):
+    ns = 1/T + np.sqrt(((1/T)**2 - 1))
+    
+    return ns
 
 def main():
     print('Do not run this directly')
