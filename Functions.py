@@ -3,6 +3,7 @@ import scipy as sp
 
 
 
+
 # def FindAntiNode2(xArray,yArray,dt):
 #     MaxLocsX = np.array([])
 #     MaxLocsY = np.array([])
@@ -83,6 +84,7 @@ def BlockFinder(xArray):
     return Blocks
 
 #!!!Once case statments are released, change this
+#!!! Add a MaxMin Detector After 500nm
 def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
     xRevAntiNode = np.array([])
     yRevAntiNode = np.array([])
@@ -229,7 +231,32 @@ def DYThorLabs(Array):
         
       return FixedArray
 
+def SecondTrim(xMax,yMax,xMin,yMin):
 
+    if xMax[-1] > xMin[-1]:
+        delPointsMax = np.array([0,1,len(xMax)-2,len(xMax)-1])
+        delPointsMin = np.array([0,1,len(xMin)-1])
+    else:
+        delPointsMax = np.array([0,1,len(xMax)-2,len(xMax)-1])
+        delPointsMin = np.array([0,1,len(xMin)-2,len(xMin)-1])        
+        
+    
+    xMaxT = np.delete(xMax,delPointsMax)
+    yMaxT = np.delete(yMax,delPointsMax)
+    xMinT = np.delete(xMin,delPointsMin)
+    yMinT = np.delete(yMin,delPointsMin)
+    
+    
+    
+    return xMaxT, yMaxT, xMinT, yMinT
+
+
+def FindNearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx]
+    
+    
 def nFinder(TM,Tm,lamb,s):
     
     N = (2*s) * ((TM - Tm) / (TM*Tm)) + ((s**2 + 1)/2)
@@ -240,12 +267,19 @@ def nFinder(TM,Tm,lamb,s):
     
     return n
 
+def round_off_rating(Array):
+    return round(Array * 2) / 2
+
+
 def dFinder(n1,n2,lam1,lam2):
     
-    d = (lam1*lam2) / (2*((lam1*n2)-(lam2*n1)))
+    if lam1 > lam2:   
+        d = (lam1*lam2) / (2*((lam1*n2)-(lam2*n1)))
+    else:
+        d = (lam1*lam2) / (2*((lam2*n1)-(lam1*n2)))
+    
     
     return d
-
 
 def xFinder(n,s,TM,Tm):
     
