@@ -1,31 +1,45 @@
 import numpy as np
+import Functions as F
 
-Array = np.array([[1,1,1,4,2,2,3,3,3],[np.pi,10,4,7,-1,4,7,18,9]])
+#Factor in substrate
+#Add in reflection?
 
-# def DYThorLabs(Array):
-    
-newXarray = np.array([])
-newYarray = np.array([])
+#Mins
 
-newXarray = np.append(newXarray,Array[0][0])
-backTotalCount = 0
-backTotal = 0
 
-for i in range(1,len(Array[0])):
-    if Array[0][i] == Array[0][i-1]:
-        backTotalCount += 1
+m = np.array([])
+
+lambda1 = np.array([100,200,300,400])
+n = np.array([2.0,1.99,1.98,1.97])
+d = np.array([300,400,500])
+
+LoopVal = len(d) - 1
+
+for i in range(len(lambda1)):
+    if i == 0:
+        mCalc =  2*n[0]*d[0] / lambda1[0]
+        m = np.append(m,np.around(mCalc,0))
+    elif i == (len(lambda1)-1):
+        mCalc =  2*n[i]*d[i-1] / lambda1[i]
+        m = np.append(m,np.around(mCalc,0))
+    else:
+        for k  in range(0,len(d) - 1):
+            mCalc =  2*n[i]*d[i-1+k] / lambda1[i]
+            print(d[i-1+k])
+            m = np.append(m,np.around(mCalc,0))
+        pass
         
-    else:   
-        newXarray = np.append(newXarray,Array[0][i])
-        newYarray = np.append(newYarray,np.mean(Array[1][backTotal:i]))
-        backTotal = backTotalCount + 1
 
+newLambda = np.array([])
 
-backTotal = backTotalCount + 1
-newYarray = np.append(newYarray,np.mean(Array[1][backTotal:i]))
-
-FixedArray = np.array([newXarray,newYarray])
-    
-    # return FixedArray
-
-
+for i in range(len(lambda1)):
+    if i == 0:
+        lamCalc =  2*n[0]*d[0] / m[0]
+        newLambda = np.append(newLambda,mCalc)
+    elif i == (len(lambda1)-1):
+        lamCalc =  2*n[i]*d[i-1] / m[i+2]
+        newLambda = np.append(newLambda,mCalc)
+    else:
+        for k  in range(0,len(d) - 1):
+            lamCalc =  2*n[i]*d[i-1+k] / m[i+k]
+            newLambda = np.append(newLambda,mCalc)
