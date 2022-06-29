@@ -59,22 +59,22 @@ for i in range(len(files1)):
     
     
 
-for i in range(len(files)):
-    plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
-    plt.minorticks_on()
-    plt.grid(b=True, which='major', color='k', linestyle='-')
-    plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
-    plt.plot(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1])
-    plt.title(files[i])
-    plt.xlabel("Wavelength (nm)")
-    plt.ylabel("Transmission/Absorbance")
-    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x")
-    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x")
-    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted")
-    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted")
+# for i in range(len(files)):
+#     plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
+#     plt.minorticks_on()
+#     plt.grid(b=True, which='major', color='k', linestyle='-')
+#     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
+#     plt.plot(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1])
+#     plt.title(files[i])
+#     plt.xlabel("Wavelength (nm)")
+#     plt.ylabel("Transmission/Absorbance")
+#     plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x")
+#     plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x")
+#     plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted")
+#     plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted")
     
-for i in range(len(files1)):   
-    plt.plot(xP,vars()['yP'+files1[i]], color = 'orange')
+# for i in range(len(files1)):   
+#     plt.plot(xP,vars()['yP'+files1[i]], color = 'orange')
     
    
 for i in range(len(files)):
@@ -87,6 +87,11 @@ for i in range(len(files)):
     vars()['nForMin'+str(i)] = np.array([])
     vars()['mForMax'+str(i)] = np.array([])
     vars()['mForMin'+str(i)] = np.array([])
+    vars()['NewXForMax'+str(i)] = np.array([])
+    vars()['NewXForMin'+str(i)] = np.array([])
+    
+    HasLoopMax = 0
+    HasLoopMin = 0
     
     for k in range(len(vars()['xNewMaxT'+str(i)])):
     
@@ -132,7 +137,7 @@ for i in range(len(files)):
             mCalc =  2*vars()['nForMax'+str(i)][k]*vars()['dForMax'+str(i)][k-1] / vars()['xNewMaxT'+str(i)][k]
             vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
         else:
-            for l in range(0,len(vars()['dForMax'+str(i)]) - 1):
+            for l in range(0,2):
                 mCalc =  2*vars()['nForMax'+str(i)][k]*vars()['dForMax'+str(i)][k-1+l] / vars()['xNewMaxT'+str(i)][k]
                 vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
     
@@ -144,11 +149,43 @@ for i in range(len(files)):
             mCalc1 =  2*vars()['nForMin'+str(i)][j]*vars()['dForMin'+str(i)][j-1] / vars()['xNewMinT'+str(i)][j]
             vars()['mForMin'+str(i)] = np.append(vars()['mForMin'+str(i)],F.round_off_rating(mCalc1))
         else:
-            for o in range(0,len(vars()['dForMin'+str(i)]) - 1):
+            for o in range(0,2):
                 mCalc1 =  2*vars()['nForMin'+str(i)][j]*vars()['dForMin'+str(i)][j-1+o] / vars()['xNewMinT'+str(i)][j]
                 vars()['mForMin'+str(i)] = np.append(vars()['mForMin'+str(i)],F.round_off_rating(mCalc1))
+    
+    
+    for k in range(len(vars()['nForMax'+str(i)])):
+        if k == 0:
+            lamCalc =  2*vars()['nForMax'+str(i)][0]*vars()['dForMax'+str(i)][0] / vars()['mForMax'+str(i)][0]
+            vars()['NewXForMax'+str(i)] = np.append( vars()['NewXForMax'+str(i)],np.around(lamCalc,0))
+        elif k == (len(vars()['nForMax'+str(i)])-1):
+            lamCalc =  2*vars()['nForMax'+str(i)][k]*vars()['dForMax'+str(i)][k-1] / vars()['mForMax'+str(i)][k]
+            vars()['NewXForMax'+str(i)] = np.append( vars()['NewXForMax'+str(i)],np.around(lamCalc,0))
+        else:
+            for l in range(0,2):
+                lamCalc =  2*vars()['nForMax'+str(i)][k]* vars()['dForMax'+str(i)][k-1+l] / vars()['mForMax'+str(i)][[k+l+HasLoopMax]]
+                vars()['NewXForMax'+str(i)] = np.append( vars()['NewXForMax'+str(i)],np.around(lamCalc,0))
+            
+            if l == 1: 
+                HasLoopMax +=1
+            else:
+                pass  
 
-
+    for j in range(len(vars()['nForMin'+str(i)])):
+        if j == 0:
+            lamCalc1 =  2*vars()['nForMin'+str(i)][0]*vars()['dForMin'+str(i)][0] / vars()['mForMin'+str(i)][0]
+            vars()['NewXForMin'+str(i)] = np.append( vars()['NewXForMin'+str(i)],F.round_off_rating(lamCalc1))
+        elif j == (len(vars()['nForMin'+str(i)])-1):
+            lamCalc1 =  2*vars()['nForMin'+str(i)][j]*vars()['dForMin'+str(i)][j-1] / vars()['mForMin'+str(i)][j]
+            vars()['NewXForMin'+str(i)] = np.append( vars()['NewXForMin'+str(i)],F.round_off_rating(lamCalc1))
+        else:
+            for o in range(0,2):
+                lamCalc1 =  2*vars()['nForMin'+str(i)][j]*vars()['dForMin'+str(i)][j-1+o] / vars()['mForMin'+str(i)][j+o+HasLoopMin]
+                vars()['NewXForMin'+str(i)] = np.append( vars()['NewXForMin'+str(i)],F.round_off_rating(lamCalc1))
+            if o == 1: 
+                HasLoopMin +=1
+            else:
+                pass   
 
     # x1 = F.xFinder(n1,1.78,62.3486/100,59.6286/100)
     # x2 = F.xFinder(n2,1.775,63.6930/100,60.8116/100)
