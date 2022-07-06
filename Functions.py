@@ -4,6 +4,7 @@ import scipy as sp
 
 
 
+
 # def FindAntiNode2(xArray,yArray,dt):
 #     MaxLocsX = np.array([])
 #     MaxLocsY = np.array([])
@@ -83,6 +84,14 @@ def BlockFinder(xArray):
     
     return Blocks
 
+
+def ArrayInterlace(Array1, Array2):
+    Combi = np.empty(Array1.size + Array2.size, dtype=Array1.dtype)
+    for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+        Combi[i*2] = item1
+        Combi[i*2+1] = item2
+    return Combi
+
 #!!!Once case statments are released, change this
 #!!! Add a MaxMin Detector After 500nm
 def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
@@ -125,13 +134,49 @@ def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
                     yRevAntiNode = np.append(yRevAntiNode,yAccept)
                      
                 
-                
                 else:
                     print('What?')
                 
         
 
     return xRevAntiNode, yRevAntiNode
+
+def AntiNodeSanityChecker(xMax,yMax,xMin,yMin):
+    
+    if min(xMax) <= min(xMin):
+        Combi = ArrayInterlace(xMax, (-1 * xMin))     
+    else:
+        Combi = ArrayInterlace((-1* xMin), * xMax)
+        
+    for i in range(1,len(Combi)):
+        if (Combi[i-1]/Combi[i-1]) != (Combi[i]/Combi[i]):
+            pass
+        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == 1:  
+            Loc = np.where(Combi[i-1] == xMax)[0][0]
+            Loc1 = np.where(Combi[i] == xMax)[0][0]
+            
+            if yMax[Loc] <= yMax[Loc1]:
+                yMax = np.delete(yMax,Loc)
+                xMax = np.delete(yMax,Loc)
+            else:
+                yMax = np.delete(yMax,Loc1)
+                xMax = np.delete(yMax,Loc1)   
+                  
+        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == -1:
+            Loc = np.where(abs(Combi[i-1]) == xMin)[0][0]
+            Loc1 = np.where(abs(Combi[i]) == xMin)[0][0]
+            if yMin[Loc] >= yMin[Loc1]:                    
+                yMin = np.delete(yMin,Loc)
+                xMin = np.delete(yMin,Loc)
+            else:
+                yMin = np.delete(yMin,Loc1)
+                xMin = np.delete(yMin ,Loc1) 
+        else:
+            pass
+                
+                    
+    return xMax, yMax, xMin, yMin
+
 
 def FindAntiNode(xArray,yArray,RangeMax):
     
@@ -246,8 +291,7 @@ def SecondTrim(xMax,yMax,xMin,yMin):
     xMinT = np.delete(xMin,delPointsMin)
     yMinT = np.delete(yMin,delPointsMin)
     
-    
-    
+
     return xMaxT, yMaxT, xMinT, yMinT
 
 
