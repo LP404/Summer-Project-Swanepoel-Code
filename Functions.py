@@ -94,7 +94,10 @@ def ArrayInterlace(Array1, Array2):
 
 #!!!Once case statments are released, change this
 #!!! Add a MaxMin Detector After 500nm
-def AntiNodeHighlander(blocks,xArray,yArray,xFull,yFull):
+def AntiNodeHighlander(xArray,yArray,xFull,yFull):
+    
+    blocks = BlockFinder(xArray)
+    
     xRevAntiNode = np.array([])
     yRevAntiNode = np.array([])
     
