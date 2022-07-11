@@ -31,8 +31,8 @@ for i in range(len(files)):
     vars()['MaxBlocks'+str(i)] = F.BlockFinder(vars()['MaxX'+str(i)])
     vars()['MinBlocks'+str(i)] = F.BlockFinder(vars()['MinX'+str(i)])
 
-    vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)] = F.AntiNodeHighlander(vars()['MaxBlocks'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
-    vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)] = F.AntiNodeHighlander(vars()['MinBlocks'+str(i)],vars()['MinX'+str(i)], vars()['MinY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
+    vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)] = F.AntiNodeHighlander(vars()['MaxX'+str(i)], vars()['MaxY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
+    vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)] = F.AntiNodeHighlander(vars()['MinX'+str(i)], vars()['MinY'+str(i)],vars()[files[i]][0],vars()[files[i]][1])
 
     #Put case statment here in python 3.10
     if i == 0:
@@ -65,19 +65,25 @@ for i in range(len(files)):
     plt.minorticks_on()
     plt.grid(b=True, which='major', color='k', linestyle='-')
     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
-    plt.plot(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1])
+    plt.plot(vars()[files[i]+'T'][0],vars()[files[i]+'T'][1], label = "Raw Data")
     plt.title(files[i])
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("Transmission/Absorbance")
-    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x")
-    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x")
-    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted")
-    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted")
+    
+    #np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
+
+
+    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x", label = "Maxima")
+    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x", label = "Minima")
+    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted", label = "TM")
+    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted", label = "Tm")
     
 for i in range(len(files1)):   
-    plt.plot(xP,vars()['yP'+files1[i]], color = 'orange')
+    plt.plot(xP,vars()['yP'+files1[i]], color = 'orange', label = "Substrate")
     
-   
+plt.legend()
+    
+
 for i in range(len(files)):
     
     vars()['xNewMaxT'+str(i)], vars()['yNewMaxT'+str(i)],vars()['xNewMinT'+str(i)], vars()['yNewMinT'+str(i)] = F.SecondTrim( vars()['xNewMax'+str(i)], vars()['yNewMax'+str(i)],vars()['xNewMin'+str(i)], vars()['yNewMin'+str(i)])
@@ -200,16 +206,49 @@ for i in range(len(files)):
                 pass 
  
     
+    # for k in range(len(vars()['xNewMaxT'+str(i)])):
+    #     if k == 0:
+    #         nCalc = vars()['mForMax'+str(i)][0]*vars()['xNewMaxT'+str(i)][0] / (2*vars()['New_dForMax'+str(i)][0])
+    #         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
+    #     elif k == (len(vars()['nForMax'+str(i)])-1):
+    #         nCalc = vars()['mForMax'+str(i)][k+2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+2])
+    #         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
+    #     else:
+    #         for l in range(0,2):       
+    #             nCalc = vars()['mForMax'+str(i)][k+l+HasLoopMax2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
+    #             vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
+    #         if l == 1: 
+    #             HasLoopMax2 +=1
+    #         else:
+    #             pass 
+
+    # for j in range(len(vars()['xNewMinT'+str(i)])):
+    #     if j == 0:
+    #         nCalc = vars()['mForMin'+str(i)][0]*vars()['xNewMinT'+str(i)][0] / (2*vars()['New_dForMin'+str(i)][0])
+    #         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
+    #     elif j == (len(vars()['nForMin'+str(i)])-1):
+    #         nCalc = vars()['mForMin'+str(i)][j+2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+2])
+    #         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
+    #     else:
+    #         for o in range(0,2):       
+    #             nCalc = vars()['mForMin'+str(i)][j+o+HasLoopMin2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
+    #             vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
+    #         if o == 1: 
+    #             HasLoopMin2 +=1
+    #         else:
+    #             pass 
+    
+    
     for k in range(len(vars()['xNewMaxT'+str(i)])):
         if k == 0:
-            nCalc = vars()['mForMax'+str(i)][0]*vars()['xNewMaxT'+str(i)][0] / (2*vars()['New_dForMax'+str(i)][0])
+            nCalc = (vars()['dForMax'+str(i)][0]*vars()['nForMax'+str(i)][0]) / (vars()['New_dForMax'+str(i)][0])
             vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
         elif k == (len(vars()['nForMax'+str(i)])-1):
-            nCalc = vars()['mForMax'+str(i)][k+2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+2])
+            nCalc = (vars()['dForMax'+str(i)][k-1]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+2])
             vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
         else:
             for l in range(0,2):       
-                nCalc = vars()['mForMax'+str(i)][k+l+HasLoopMax2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
+                nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
                 vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
             if l == 1: 
                 HasLoopMax2 +=1
@@ -218,19 +257,20 @@ for i in range(len(files)):
 
     for j in range(len(vars()['xNewMinT'+str(i)])):
         if j == 0:
-            nCalc = vars()['mForMin'+str(i)][0]*vars()['xNewMinT'+str(i)][0] / (2*vars()['New_dForMin'+str(i)][0])
+            nCalc = (vars()['dForMin'+str(i)][0]*vars()['nForMin'+str(i)][0]) / (vars()['New_dForMin'+str(i)][0])
             vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
         elif j == (len(vars()['nForMin'+str(i)])-1):
-            nCalc = vars()['mForMin'+str(i)][j+2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+2])
+            nCalc = (vars()['dForMin'+str(i)][j-1]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+2])
             vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
         else:
             for o in range(0,2):       
-                nCalc = vars()['mForMin'+str(i)][j+o+HasLoopMin2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
+                nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
                 vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
             if o == 1: 
                 HasLoopMin2 +=1
             else:
                 pass 
+    
     
     HasLoopMax3 = 0
     HasLoopMin3 = 0
@@ -239,42 +279,42 @@ for i in range(len(files)):
     for k in range(len(vars()['xNewMaxT'+str(i)])):
         if k == 0:
             vars()['df'+str(i)] = pd.DataFrame({'λ':[vars()['xNewMaxT'+str(i)][0]], 
-                               'TM':[vars()['yNewMaxT'+str(i)][0]], 
-                               'Tm':[vars()['TmForMax'+str(i)][0]], 
-                               'n1':[vars()['nForMax'+str(i)][0]], 
-                               'd1':[vars()['dForMax'+str(i)][0]], 
-                               'm':[vars()['mForMax'+str(i)][0]], 
-                               'ma':["-"] , 
-                               'd2':[vars()['New_dForMax'+str(i)][0]], 
-                               'd2a':["-"] , 
-                               'n2':[vars()['New_nForMax'+str(i)][0]] , 
-                               'n2a':["-"]})
+                                'TM':[vars()['yNewMaxT'+str(i)][0]], 
+                                'Tm':[vars()['TmForMax'+str(i)][0]], 
+                                'n1':[vars()['nForMax'+str(i)][0]], 
+                                'd1':[vars()['dForMax'+str(i)][0]], 
+                                'm':[vars()['mForMax'+str(i)][0]], 
+                                'ma':["-"] , 
+                                'd2':[vars()['New_dForMax'+str(i)][0]], 
+                                'd2a':["-"] , 
+                                'n2':[vars()['New_nForMax'+str(i)][0]] , 
+                                'n2a':["-"]})
         elif k == (len(vars()['nForMax'+str(i)])-1):
             df1 = pd.DataFrame({'λ':[vars()['xNewMaxT'+str(i)][k]], 
-                               'TM':[vars()['yNewMaxT'+str(i)][k]], 
-                               'Tm':[vars()['TmForMax'+str(i)][k]], 
-                               'n1':[vars()['nForMax'+str(i)][k]], 
-                               'd1':[vars()['dForMax'+str(i)][k-1]], 
-                               'm':[vars()['mForMax'+str(i)][k+2]], 
-                               'ma':["-"] , 
-                               'd2':[vars()['New_dForMax'+str(i)][k+2]], 
-                               'd2a':["-"] , 
-                               'n2':[vars()['New_nForMax'+str(i)][k+2]] , 
-                               'n2a':["-"]})
+                                'TM':[vars()['yNewMaxT'+str(i)][k]], 
+                                'Tm':[vars()['TmForMax'+str(i)][k]], 
+                                'n1':[vars()['nForMax'+str(i)][k]], 
+                                'd1':[vars()['dForMax'+str(i)][k-1]], 
+                                'm':[vars()['mForMax'+str(i)][k+2]], 
+                                'ma':["-"] , 
+                                'd2':[vars()['New_dForMax'+str(i)][k+2]], 
+                                'd2a':["-"] , 
+                                'n2':[vars()['New_nForMax'+str(i)][k+2]] , 
+                                'n2a':["-"]})
             
             vars()['df'+str(i)] = vars()['df'+str(i)].append(df1, ignore_index = True)
         else:
             df1 = pd.DataFrame({'λ':[vars()['xNewMaxT'+str(i)][k]], 
-                               'TM':[vars()['yNewMaxT'+str(i)][k]], 
-                               'Tm':[vars()['TmForMax'+str(i)][k]], 
-                               'n1':[vars()['nForMax'+str(i)][k]], 
-                               'd1':[vars()['dForMax'+str(i)][k-1]], 
-                               'm':[vars()['mForMax'+str(i)][k+HasLoopMax3]], 
-                               'ma':[vars()['mForMax'+str(i)][k+1+HasLoopMax3]] , 
-                               'd2':[vars()['New_dForMax'+str(i)][k+HasLoopMax3]], 
-                               'd2a':[vars()['New_dForMax'+str(i)][k+1+HasLoopMax3]] , 
-                               'n2':[vars()['New_nForMax'+str(i)][k+HasLoopMax3]] , 
-                               'n2a':[vars()['New_nForMax'+str(i)][k+1+HasLoopMax3]]})
+                                'TM':[vars()['yNewMaxT'+str(i)][k]], 
+                                'Tm':[vars()['TmForMax'+str(i)][k]], 
+                                'n1':[vars()['nForMax'+str(i)][k]], 
+                                'd1':[vars()['dForMax'+str(i)][k-1]], 
+                                'm':[vars()['mForMax'+str(i)][k+HasLoopMax3]], 
+                                'ma':[vars()['mForMax'+str(i)][k+1+HasLoopMax3]] , 
+                                'd2':[vars()['New_dForMax'+str(i)][k+HasLoopMax3]], 
+                                'd2a':[vars()['New_dForMax'+str(i)][k+1+HasLoopMax3]] , 
+                                'n2':[vars()['New_nForMax'+str(i)][k+HasLoopMax3]] , 
+                                'n2a':[vars()['New_nForMax'+str(i)][k+1+HasLoopMax3]]})
             vars()['df'+str(i)] = vars()['df'+str(i)].append(df1, ignore_index = True) 
             HasLoopMax3 +=1
 
@@ -282,43 +322,43 @@ for i in range(len(files)):
     for j in range(len(vars()['xNewMinT'+str(i)])):
         if j == 0:
             df1 = pd.DataFrame({'λ':[vars()['xNewMinT'+str(i)][0]], 
-                               'TM':[vars()['TMForMin'+str(i)][0]], 
-                               'Tm':[vars()['yNewMinT'+str(i)][0]], 
-                               'n1':[vars()['nForMin'+str(i)][0]], 
-                               'd1':[vars()['dForMin'+str(i)][0]], 
-                               'm':[vars()['mForMin'+str(i)][0]],
-                               'ma':["-"],
-                               'd2':[vars()['New_dForMin'+str(i)][0]], 
-                               'd2a':["-"] , 
-                               'n2':[vars()['New_nForMin'+str(i)][0]] , 
-                               'n2a':["-"]})
+                                'TM':[vars()['TMForMin'+str(i)][0]], 
+                                'Tm':[vars()['yNewMinT'+str(i)][0]], 
+                                'n1':[vars()['nForMin'+str(i)][0]], 
+                                'd1':[vars()['dForMin'+str(i)][0]], 
+                                'm':[vars()['mForMin'+str(i)][0]],
+                                'ma':["-"],
+                                'd2':[vars()['New_dForMin'+str(i)][0]], 
+                                'd2a':["-"] , 
+                                'n2':[vars()['New_nForMin'+str(i)][0]] , 
+                                'n2a':["-"]})
             vars()['df'+str(i)] = vars()['df'+str(i)].append(df1, ignore_index = True)
         elif j == (len(vars()['nForMin'+str(i)])-1):
             df1 = pd.DataFrame({'λ':[vars()['xNewMinT'+str(i)][j]], 
-                               'TM':[vars()['TMForMin'+str(i)][j]], 
-                               'Tm':[vars()['yNewMinT'+str(i)][j]], 
-                               'n1':[vars()['nForMin'+str(i)][j]], 
-                               'd1':[vars()['dForMin'+str(i)][j-1]], 
-                               'm':[vars()['mForMin'+str(i)][j+2]], 
-                               'ma':["-"] ,
-                               'd2':[vars()['New_dForMin'+str(i)][j+2]], 
-                               'd2a':["-"] , 
-                               'n2':[vars()['New_nForMin'+str(i)][j+2]] , 
-                               'n2a':["-"]})
+                                'TM':[vars()['TMForMin'+str(i)][j]], 
+                                'Tm':[vars()['yNewMinT'+str(i)][j]], 
+                                'n1':[vars()['nForMin'+str(i)][j]], 
+                                'd1':[vars()['dForMin'+str(i)][j-1]], 
+                                'm':[vars()['mForMin'+str(i)][j+2]], 
+                                'ma':["-"] ,
+                                'd2':[vars()['New_dForMin'+str(i)][j+2]], 
+                                'd2a':["-"] , 
+                                'n2':[vars()['New_nForMin'+str(i)][j+2]] , 
+                                'n2a':["-"]})
             
             vars()['df'+str(i)] = vars()['df'+str(i)].append(df1, ignore_index = True)
         else:
             df1 = pd.DataFrame({'λ':[vars()['xNewMinT'+str(i)][j]], 
-                               'TM':[vars()['TMForMin'+str(i)][j]], 
-                               'Tm':[vars()['yNewMinT'+str(i)][j]], 
-                               'n1':[vars()['nForMin'+str(i)][j]], 
-                               'd1':[vars()['dForMin'+str(i)][j-1]], 
-                               'm':[vars()['mForMin'+str(i)][k+HasLoopMin3]], 
-                               'ma':[vars()['mForMin'+str(i)][k+1+HasLoopMin3]] , 
-                               'd2':[vars()['New_dForMin'+str(i)][k+HasLoopMin3]], 
-                               'd2a':[vars()['New_dForMin'+str(i)][k+1+HasLoopMin3]] , 
-                               'n2':[vars()['New_nForMin'+str(i)][k+HasLoopMin3]] , 
-                               'n2a':[vars()['New_nForMin'+str(i)][k+1+HasLoopMin3]]})
+                                'TM':[vars()['TMForMin'+str(i)][j]], 
+                                'Tm':[vars()['yNewMinT'+str(i)][j]], 
+                                'n1':[vars()['nForMin'+str(i)][j]], 
+                                'd1':[vars()['dForMin'+str(i)][j-1]], 
+                                'm':[vars()['mForMin'+str(i)][k+HasLoopMin3]], 
+                                'ma':[vars()['mForMin'+str(i)][k+1+HasLoopMin3]] , 
+                                'd2':[vars()['New_dForMin'+str(i)][k+HasLoopMin3]], 
+                                'd2a':[vars()['New_dForMin'+str(i)][k+1+HasLoopMin3]] , 
+                                'n2':[vars()['New_nForMin'+str(i)][k+HasLoopMin3]] , 
+                                'n2a':[vars()['New_nForMin'+str(i)][k+1+HasLoopMin3]]})
             vars()['df'+str(i)] = vars()['df'+str(i)].append(df1, ignore_index = True) 
             HasLoopMin3 +=1
             
