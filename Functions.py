@@ -5,38 +5,6 @@ from scipy.signal import lfilter, lfilter_zi, filtfilt, butter
 
 
 
-
-# def FindAntiNode2(xArray,yArray,dt):
-#     MaxLocsX = np.array([])
-#     MaxLocsY = np.array([])
-#     MinLocsX = np.array([])
-#     MinLocsY = np.array([])
-    
-#     for i in range(1,len(xArray)-1):
-#         m2ndDer = (yArray[i+1] - (2 * yArray[i]) + yArray[i-1]) / dt**2
-        
-#         if m2ndDer <= 0.1:
-#             m1 = (yArray[i] - yArray[i-1]) / (xArray[i] - xArray[i-1])
-#             m2 = (yArray[i+1] - yArray[i]) / (xArray[i+1] - xArray[i])
-            
-#             Trial1 = m1 / abs(m1)
-#             Trial2 = m2 / abs(m2)
-                            
-#             if Trial1 < Trial2:
-#                     MaxLocsX = np.append(MaxLocsX,xArray[i])
-#                     MaxLocsY = np.append(MaxLocsY,yArray[i])
-#             elif Trial2 > Trial1:
-#                     MinLocsX = np.append(MinLocsX,xArray[i])
-#                     MinLocsY = np.append(MinLocsY,yArray[i])
-#             else:
-#                 pass
-                
-                
-            
-
-
-#     return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
-
 def Trim(Array,start,end):
     delPoints = np.where((Array[0] < start) | (Array[0] > end))[0]
     
@@ -125,14 +93,6 @@ def BlockFinder(xArray):
             BlockLength = 0
     
     return Blocks
-
-
-def ArrayInterlace(Array1, Array2):
-    Combi = np.empty(Array1.size + Array2.size, dtype=Array1.dtype)
-    for i, (item1, item2) in enumerate(zip(Array1, Array2)):
-        Combi[i*2] = item1
-        Combi[i*2+1] = item2
-    return Combi
 
 #!!!Once case statments are released, change this
 #!!! Add a MaxMin Detector After 500nm
@@ -223,78 +183,15 @@ def AntiNodeSanityChecker(xMax,yMax,xMin,yMin):
     return xMax, yMax, xMin, yMin
 
 
-def FindAntiNode(xArray,yArray,RangeMax):
+def FindAntiNode(xArray,yArray):
     
-    #RangeMaxNumbers
-    #2 is the lowest number
-    # Nearest Border - 2 is theoretically the highest but use 15
-    #Current setting is arbitary
+    Xmaxima = xArray[argrelextrema(yArray, np.greater)[0]]
+    Xminima = xArray[argrelextrema(yArray, np.less)[0]]
     
-    #!!!Add try catch later
+    Ymaxima = yArray[argrelextrema(yArray, np.greater)[0]]
+    Yminima = yArray[argrelextrema(yArray, np.less)[0]]
     
-    if RangeMax < 2:
-        RangeMax = 2
-    elif RangeMax > (int(len(xArray)/2) - 2):
-        RangeMax = (int(len(xArray)/2) - 2)
-    else:
-        pass
-    
-    MaxLocsX = np.array([])
-    MaxLocsY = np.array([])
-    MinLocsX = np.array([])
-    MinLocsY = np.array([])
-    
-    MinAllowed = False
-    MaxAllowed = False
-    
-    
-    #0 is before a potential anti note, 1 is what is being tested to be the antinode, and 2 is the point after the potential antinode
-    
-    #max(np.where(vars()[files[0]][1] < 1)[0]) Add an engagment mechanisim past 250nm
-    #WTF is engement?
-    
-    #These need to be at 5 and I don't remember why
-    for i in range(5,len(xArray)-5):
-        if i != 0:
-            m1 = (yArray[i] - yArray[i-1]) / (xArray[i] - xArray[i-1])
-            m2 = (yArray[i+1] - yArray[i]) / (xArray[i+1] - xArray[i])
-            
-
-            Trial1 = m1 / abs(m1)
-            Trial2 = m2 / abs(m2)
-                            
-            if Trial1 != Trial2:
-                Prev = 0
-                Next = 0
-                for k in range(1,RangeMax):
-                    if i < (len(xArray) - (RangeMax+1)):
-                        Prev += (yArray[i-(k-1)] - yArray[i-k]) / (xArray[i-(k-1)] - xArray[i-k])
-                        Next += (yArray[i+(k+1)] - yArray[i+k]) / (xArray[i+(k+1)] - xArray[i+k])
-                    else:
-                        pass
-            
-                if Prev < 0 and Next > 0:
-                    MinAllowed = True
-                elif Prev > 0 and Next < 0:
-                    MaxAllowed = True
-                else:
-                    pass
-            
-                if MaxAllowed == True:
-                    MaxLocsX = np.append(MaxLocsX,xArray[i])
-                    MaxLocsY = np.append(MaxLocsY,yArray[i])
-                    MaxAllowed = False
-                elif MinAllowed == True:
-                    MinLocsX = np.append(MinLocsX,xArray[i])
-                    MinLocsY = np.append(MinLocsY,yArray[i])
-                    MinAllowed = False
-                else:
-                    pass
-            else:
-                pass
-
-            
-    return MaxLocsX, MaxLocsY, MinLocsX, MinLocsY
+    return Xmaxima, Ymaxima, Xminima, Yminima
 
 def DYThorLabs(Array):
     
