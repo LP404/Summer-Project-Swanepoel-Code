@@ -1,5 +1,6 @@
 import numpy as np
-import scipy as sp
+from scipy.signal import argrelextrema
+from scipy.signal import lfilter, lfilter_zi, filtfilt, butter
 
 
 
@@ -44,7 +45,14 @@ def Trim(Array,start,end):
     
     return newArray
 
-
+def NoiseFilter(Val1,Val2,yArray):
+    b, a = butter(Val1, Val2)
+    zi = lfilter_zi(b, a)
+    z, _ = lfilter(b, a, yArray, zi=zi*yArray[0])
+    z2, _ = lfilter(b, a, z, zi=zi*z[0])
+    yFiltered = filtfilt(b, a, yArray)
+    
+    return yFiltered
 
 def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
     
@@ -65,6 +73,40 @@ def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
     
     return yInterp
 
+
+def ArrayInterlace(Array1, Array2):
+    Combi = np.zeros(Array1.size + Array2.size)
+    
+    if len(Array1) < len(Array2):
+        CritLength = len(Array1)
+        CritArray = Array2    
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
+    
+        DeleteIndis = np.arange(2*CritLength-1,len(Combi),1)
+        Combi = np.delete(Combi,DeleteIndis)
+        Combi = np.append(Combi,CritArray[CritLength-1:])
+        
+    elif len(Array1) > len(Array2):
+        CritLength = len(Array2)
+        CritArray = Array1
+    
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
+    
+        DeleteIndis = np.arange(2*CritLength,len(Combi),1)
+        Combi = np.delete(Combi,DeleteIndis)
+        Combi = np.append(Combi,CritArray[CritLength:])
+    
+    else:
+    
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
+
+    return Combi
 
 def BlockFinder(xArray):
     gap = np.diff(xArray)
