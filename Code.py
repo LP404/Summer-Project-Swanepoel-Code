@@ -204,40 +204,7 @@ for i in range(len(files)):
                 HasLoopMin1 +=1
             else:
                 pass 
- 
-    
-    # for k in range(len(vars()['xNewMaxT'+str(i)])):
-    #     if k == 0:
-    #         nCalc = vars()['mForMax'+str(i)][0]*vars()['xNewMaxT'+str(i)][0] / (2*vars()['New_dForMax'+str(i)][0])
-    #         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
-    #     elif k == (len(vars()['nForMax'+str(i)])-1):
-    #         nCalc = vars()['mForMax'+str(i)][k+2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+2])
-    #         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
-    #     else:
-    #         for l in range(0,2):       
-    #             nCalc = vars()['mForMax'+str(i)][k+l+HasLoopMax2]* vars()['xNewMaxT'+str(i)][k] / (2*vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
-    #             vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
-    #         if l == 1: 
-    #             HasLoopMax2 +=1
-    #         else:
-    #             pass 
-
-    # for j in range(len(vars()['xNewMinT'+str(i)])):
-    #     if j == 0:
-    #         nCalc = vars()['mForMin'+str(i)][0]*vars()['xNewMinT'+str(i)][0] / (2*vars()['New_dForMin'+str(i)][0])
-    #         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
-    #     elif j == (len(vars()['nForMin'+str(i)])-1):
-    #         nCalc = vars()['mForMin'+str(i)][j+2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+2])
-    #         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
-    #     else:
-    #         for o in range(0,2):       
-    #             nCalc = vars()['mForMin'+str(i)][j+o+HasLoopMin2]* vars()['xNewMinT'+str(i)][j] / (2*vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
-    #             vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
-    #         if o == 1: 
-    #             HasLoopMin2 +=1
-    #         else:
-    #             pass 
-    
+   
     
     for k in range(len(vars()['xNewMaxT'+str(i)])):
         if k == 0:
