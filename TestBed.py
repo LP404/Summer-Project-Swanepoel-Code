@@ -10,7 +10,7 @@ from scipy.signal import argrelextrema
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\Data'))
 xMin = 200
-xMax = 875
+xMax = 800
 
 def BlockFinder(xArray):
     gap = np.diff(xArray)
@@ -33,29 +33,36 @@ def BlockFinder(xArray):
 #FixThisLater
 def ArrayInterlace(Array1, Array2):
     Combi = np.zeros(Array1.size + Array2.size)
+    
     if len(Array1) < len(Array2):
         CritLength = len(Array1)
-        CritArray = Array2
-        Unequal = True
-    elif len(Array1) > len(Array2):
-        CritLength = len(Array2)
-        CritArray = Array1
-        Unequal = True
-    else:
-        Unequal = False
+        CritArray = Array2    
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
     
-    for i, (item1, item2) in enumerate(zip(Array1, Array2)):
-        Combi[i*2] = item1
-        Combi[i*2+1] = item2
-        
-        
-    if Unequal == True:
         DeleteIndis = np.arange(2*CritLength-1,len(Combi),1)
         Combi = np.delete(Combi,DeleteIndis)
         Combi = np.append(Combi,CritArray[CritLength-1:])
-    else:
-        pass
+        
+    elif len(Array1) > len(Array2):
+        CritLength = len(Array2)
+        CritArray = Array1
     
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
+    
+        DeleteIndis = np.arange(2*CritLength,len(Combi),1)
+        Combi = np.delete(Combi,DeleteIndis)
+        Combi = np.append(Combi,CritArray[CritLength:])
+    
+    else:
+    
+        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
+            Combi[i*2] = item1
+            Combi[i*2+1] = item2
+
     return Combi
 
 #!!!Once case statments are released, change this
@@ -107,64 +114,84 @@ def AntiNodeHighlander(xArray,yArray,xFull,yFull):
                     print('What?')
 
     return xRevAntiNode, yRevAntiNode
-        
+
+
 def AntiNodeSanityChecker(xMax,yMax,xMin,yMin):
     
-    for i in range(yMax):
-        if yMax < 0.2:
-            yMax = np.delete(yMax,i)
-            xMax = np.delete(xMax,i)
+    MaxLoc = np.array([])
+    MinLoc = np.array([])
+    
+    for i in range(len(yMax)):
+        if yMax[i] < 0.2:
+            MaxLoc = np.append(MaxLoc,i)
             
-        elif xMax < 100:
-            yMax = np.delete(yMax,i)
-            xMax = np.delete(xMax,i)            
-
-    for i in range(yMin):
-        if yMin < 0.2:
-            yMin = np.delete(yMin,i)
-            xMin = np.delete(xMin,i)    
-
-        elif xMin < 100:
-            yMin = np.delete(yMin,i)
-            xMin = np.delete(xMin,i)         
-    
-    FullX = ArrayInterlace(xMax,xMin/100)
-    
-    
-    if min(xMax) <= min(xMin):
-        Combi = ArrayInterlace(xMax, (-1 * xMin))     
-    else:
-        Combi = ArrayInterlace((-1* xMin), * xMax)
+        elif xMax[i] < 100:
+            MaxLoc = np.append(MaxLoc,i)
+          
+    for i in range(len(yMin)):
+        if yMin[i] < 0.2:
+            MinLoc = np.append(MinLoc,i)
+   
+        elif xMin[i] < 100:
+            MinLoc = np.append(MinLoc,i)
+ 
         
-    for i in range(1,len(Combi)):
-        if (Combi[i-1]/Combi[i-1]) != (Combi[i]/Combi[i]):
-            pass
-        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == 1:  
-            Loc = np.where(Combi[i-1] == xMax)[0][0]
-            Loc1 = np.where(Combi[i] == xMax)[0][0]
+    MaxLoc = np.sort(MaxLoc).astype('int32')
+    MinLoc = np.sort(MinLoc).astype('int32')
+    
+    yMax = np.delete(yMax,MaxLoc)
+    xMax = np.delete(xMax,MaxLoc)   
+    yMin = np.delete(yMin,MinLoc)
+    xMin = np.delete(xMin,MinLoc) 
+    
+
+        
+    # if min(xMax) <= min(xMin):
+    #     Combi = ArrayInterlace(xMax, (-1 * xMin))     
+    # else:
+    #     Combi = ArrayInterlace((-1* xMin), * xMax)
+        
+    # for i in range(1,len(Combi)):
+    #     if (Combi[i-1]/Combi[i-1]) != (Combi[i]/Combi[i]):
+    #         pass
+    #     elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == 1:  
+    #         Loc = np.where(Combi[i-1] == xMax)[0][0]
+    #         Loc1 = np.where(Combi[i] == xMax)[0][0]
             
-            if yMax[Loc] <= yMax[Loc1]:
-                yMax = np.delete(yMax,Loc)
-                xMax = np.delete(yMax,Loc)
-            else:
-                yMax = np.delete(yMax,Loc1)
-                xMax = np.delete(yMax,Loc1)   
+    #         if yMax[Loc] <= yMax[Loc1]:
+    #             yMax = np.delete(yMax,Loc)
+    #             xMax = np.delete(yMax,Loc)
+    #         else:
+    #             yMax = np.delete(yMax,Loc1)
+    #             xMax = np.delete(yMax,Loc1)   
                   
-        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == -1:
-            Loc = np.where(abs(Combi[i-1]) == xMin)[0][0]
-            Loc1 = np.where(abs(Combi[i]) == xMin)[0][0]
-            if yMin[Loc] >= yMin[Loc1]:                    
-                yMin = np.delete(yMin,Loc)
-                xMin = np.delete(yMin,Loc)
-            else:
-                yMin = np.delete(yMin,Loc1)
-                xMin = np.delete(yMin ,Loc1) 
-        else:
-            pass
+    #     elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == -1:
+    #         Loc = np.where(abs(Combi[i-1]) == xMin)[0][0]
+    #         Loc1 = np.where(abs(Combi[i]) == xMin)[0][0]
+    #         if yMin[Loc] >= yMin[Loc1]:                    
+    #             yMin = np.delete(yMin,Loc)
+    #             xMin = np.delete(yMin,Loc)
+    #         else:
+    #             yMin = np.delete(yMin,Loc1)
+    #             xMin = np.delete(yMin ,Loc1) 
+    #     else:
+    #         pass
+            
+        # LastLoc = np.where(abs(Combi) < 500)[0][-1]
+        
+        # if (Combi[LastLoc]/abs(Combi[LastLoc])) == 1:
+        #     IsLastMax = True
+        # else:
+        #     IsLastMax = False
+        
+        
+        # for i in range(LastLoc+1,len(Combi)):
+        #         if abs(Combi[i] - Combi[i-1]) < 10:
+        #             if  IsLastMax == True
+                    
                 
                     
     return xMax, yMax, xMin, yMin    
-
 
 #The next three loops remove the .txt from the files strings, this is for a cleaner title for the graph
 for i in range(len(files)):
@@ -176,24 +203,13 @@ for i in range(len(files)):
     #T stands for Truncated
     vars()[files[i]+'T'] = F.Trim(vars()[files[i]],xMin,xMax)
 
-
-    b, a = butter(3, 0.2)
-    zi = lfilter_zi(b, a)
-    z, _ = lfilter(b, a, vars()[files[i]+'T'][1], zi=zi*vars()[files[i]+'T'][1][0])
-    z2, _ = lfilter(b, a, z, zi=zi*z[0])
-    y = filtfilt(b, a, vars()[files[i]+'T'][1])
+    
+    y = F.NoiseFilter(3,0.2,vars()[files[i]+'T'][1])
     
     
     plt.figure(figsize=(10,5))
-    # plt.plot(vars()[files[i]+'T'][0], vars()[files[i]+'T'][1], 'b', linewidth=1.75, alpha=0.75)
-    # plt.plot(vars()[files[i]+'T'][0], z, 'r--', linewidth=1.75)
-    # plt.plot(vars()[files[i]+'T'][0], z2, 'r', linewidth=1.75)
-    plt.plot(vars()[files[i]+'T'][0], y, 'k', linewidth=1.75)
-    plt.legend(('noisy signal',
-            'lfilter, once',
-            'lfilter, twice',
-            'filtfilt'),
-           loc='best')
+    plt.plot(vars()[files[i]+'T'][0], y, 'k', linewidth=1.75, label = 'cleaner signal')
+    plt.legend(loc='best')
     plt.grid(True)
     
     Xmaxima = vars()[files[i]+'T'][0][argrelextrema(y, np.greater)[0]]
