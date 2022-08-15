@@ -22,11 +22,16 @@ def NoiseFilter(Val1,Val2,yArray):
     
     return yFiltered
 
-def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
+def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,BoolMinima):
     
     #Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
     
-    Loc = max(np.where(np.around(yArray,2) == 0.50)[0])
+    if BoolMinima == True:
+        Loc = max(np.where(yArray < AntiNodeY[0])[0])
+    else: 
+        Loc = np.where(xArray ==  AntiNodeX[0])[0][0]
+        
+    #Loc = max(np.where((np.around(yArray,2) == 0.50) | (np.around(yArray,2) == 0.49) | (np.around(yArray,2) == 0.51))[0])
     
     #0.5 is currently arbiraty, but frindges don't usually appear until after 50% transmission
     
@@ -42,156 +47,72 @@ def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
     return yInterp
 
 
-def ArrayInterlace(Array1, Array2):
-    Combi = np.zeros(Array1.size + Array2.size)
-    
-    if len(Array1) < len(Array2):
-        CritLength = len(Array1)
-        CritArray = Array2    
-        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
-            Combi[i*2] = item1
-            Combi[i*2+1] = item2
-    
-        DeleteIndis = np.arange(2*CritLength-1,len(Combi),1)
-        Combi = np.delete(Combi,DeleteIndis)
-        Combi = np.append(Combi,CritArray[CritLength-1:])
-        
-    elif len(Array1) > len(Array2):
-        CritLength = len(Array2)
-        CritArray = Array1
-    
-        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
-            Combi[i*2] = item1
-            Combi[i*2+1] = item2
-    
-        DeleteIndis = np.arange(2*CritLength,len(Combi),1)
-        Combi = np.delete(Combi,DeleteIndis)
-        Combi = np.append(Combi,CritArray[CritLength:])
-    
-    else:
-    
-        for i, (item1, item2) in enumerate(zip(Array1, Array2)):
-            Combi[i*2] = item1
-            Combi[i*2+1] = item2
-
-    return Combi
-
-def BlockFinder(xArray):
-    gap = np.diff(xArray)
-    BlockLength = 0
-    Blocks = np.array([])
-    for i in range(len(gap)):
-        
-        if gap[i] < np.mean(gap):
-            BlockLength += 1
-            if i == (len(gap) - 1):
-                Blocks = np.append(Blocks, (BlockLength + 1))
-            else:
-                pass
-        else:
-            Blocks = np.append(Blocks, (BlockLength + 1))
-            BlockLength = 0
-    
-    return Blocks
-
-#!!!Once case statments are released, change this
-#!!! Add a MaxMin Detector After 500nm
-def AntiNodeHighlander(xArray,yArray,xFull,yFull):
-    
-    blocks = BlockFinder(xArray)
-    
-    xRevAntiNode = np.array([])
-    yRevAntiNode = np.array([])
-    
-    
-    for i in range(len(blocks)+1):
-        if i == 0:
-            pass
-        else:
-            start = int(sum(blocks[0:i-1]))
-            end = int(sum(blocks[0:i]))
-            xTrial = xArray[start:end]
-            yTrial = yArray[start:end] 
-            
-            if max(yTrial) < 0.2:
-                pass
-            else:
-                #!!!Find a more resource efficient way to do this
-                #!!Sort the potential crankMax loop
-                if len(xTrial) == 1:
-                    xRevAntiNode = np.append(xRevAntiNode,xTrial)
-                    yRevAntiNode = np.append(yRevAntiNode,yTrial)
-                
-                elif len(xTrial) > 1:
-                    MinVal = 100
-                    xAccept = xTrial[0]
-                    yAccept = yTrial[0]
-                    for k  in range(len(yTrial)):
-                        loc = np.where(yFull == yTrial[k])[0][0]
-                        m2ndDer = (yFull[loc+1] - (2 * yFull[loc]) + yFull[loc-1])
-                        if abs(m2ndDer) < MinVal:
-                            MinVal = abs(m2ndDer)
-                            yAccept = yTrial[k]
-                            xAccept = xTrial[k]
-                        else:
-                            pass
-                    xRevAntiNode = np.append(xRevAntiNode,xAccept)
-                    yRevAntiNode = np.append(yRevAntiNode,yAccept)
-                     
-                
-                else:
-                    print('What?')
-                
-        
-
-    return xRevAntiNode, yRevAntiNode
-
-def AntiNodeSanityChecker(xMax,yMax,xMin,yMin):
-    
-    if min(xMax) <= min(xMin):
-        Combi = ArrayInterlace(xMax, (-1 * xMin))     
-    else:
-        Combi = ArrayInterlace((-1* xMin), * xMax)
-        
-    for i in range(1,len(Combi)):
-        if (Combi[i-1]/Combi[i-1]) != (Combi[i]/Combi[i]):
-            pass
-        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == 1:  
-            Loc = np.where(Combi[i-1] == xMax)[0][0]
-            Loc1 = np.where(Combi[i] == xMax)[0][0]
-            
-            if yMax[Loc] <= yMax[Loc1]:
-                yMax = np.delete(yMax,Loc)
-                xMax = np.delete(yMax,Loc)
-            else:
-                yMax = np.delete(yMax,Loc1)
-                xMax = np.delete(yMax,Loc1)   
-                  
-        elif (Combi[i-1]/abs(Combi[i-1])) == (Combi[i]/abs(Combi[i])) == -1:
-            Loc = np.where(abs(Combi[i-1]) == xMin)[0][0]
-            Loc1 = np.where(abs(Combi[i]) == xMin)[0][0]
-            if yMin[Loc] >= yMin[Loc1]:                    
-                yMin = np.delete(yMin,Loc)
-                xMin = np.delete(yMin,Loc)
-            else:
-                yMin = np.delete(yMin,Loc1)
-                xMin = np.delete(yMin ,Loc1) 
-        else:
-            pass
-                
-                    
-    return xMax, yMax, xMin, yMin
-
-
 def FindAntiNode(xArray,yArray):
     
-    Xmaxima = xArray[argrelextrema(yArray, np.greater)[0]]
-    Xminima = xArray[argrelextrema(yArray, np.less)[0]]
+    xMax = xArray[argrelextrema(yArray, np.greater)[0]]
+    xMin = xArray[argrelextrema(yArray, np.less)[0]]
     
-    Ymaxima = yArray[argrelextrema(yArray, np.greater)[0]]
-    Yminima = yArray[argrelextrema(yArray, np.less)[0]]
+    yMax = yArray[argrelextrema(yArray, np.greater)[0]]
+    yMin = yArray[argrelextrema(yArray, np.less)[0]]
     
-    return Xmaxima, Ymaxima, Xminima, Yminima
+    
+    #Trims front of the maximias
+    
+    MaxLoc = np.array([])
+    MinLoc = np.array([])
+    
+    for i in range(len(yMax)):
+        if yMax[i] < 0.2:
+            MaxLoc = np.append(MaxLoc,i)
+            
+        elif xMax[i] < 100:
+            MaxLoc = np.append(MaxLoc,i)
+          
+    for i in range(len(yMin)):
+        if yMin[i] < 0.2:
+            MinLoc = np.append(MinLoc,i)
+   
+        elif xMin[i] < 100:
+            MinLoc = np.append(MinLoc,i)
+ 
+        
+    MaxLoc = np.sort(MaxLoc).astype('int32')
+    MinLoc = np.sort(MinLoc).astype('int32')
+    
+    yMax = np.delete(yMax,MaxLoc)
+    xMax = np.delete(xMax,MaxLoc)   
+    yMin = np.delete(yMin,MinLoc)
+    xMin = np.delete(xMin,MinLoc)
+    
+    return xMax, yMax, xMin, yMin
+
+def BackNodeFix(Val1,Val2,xArray,yArray,xMax,yMax,xMin,yMin):
+   
+   #!!! Make this smart and apply filter when it finds an insonistancy or a very small gap 
+   #!!! Currently relies on a magic number of 0.075
+   
+   
+    y = NoiseFilter(Val1,Val2,yArray)
+    
+    DelMaxLoc = np.where(xMax >= 600)[0]
+    DelMinLoc = np.where(xMin >= 600)[0]
+    
+    yMax = np.delete(yMax,DelMaxLoc)
+    xMax = np.delete(xMax,DelMaxLoc)   
+    yMin = np.delete(yMin,DelMinLoc)
+    xMin = np.delete(xMin,DelMinLoc)
+    
+    
+    xMax1,yMax1,xMin1,yMin1 = FindAntiNode(xArray,y)
+    
+    
+    yMax = np.append(yMax,yMax1[np.where(xMax1 >= 600)[0]])
+    xMax = np.append(xMax,xMax1[np.where(xMax1 >= 600)[0]])   
+    yMin = np.append(yMin,yMin1[np.where(xMin1 >= 600)[0]])
+    xMin = np.append(xMin,xMin1[np.where(xMin1 >= 600)[0]])
+    
+    return xMax,yMax,xMin,yMin
+
 
 def DYThorLabs(Array):
     
@@ -253,16 +174,30 @@ def nFinder(TM,Tm,lamb,s):
     
     return n
 
+#Note value must be to the nearest 0.5, investigate further
 def round_off_rating(Array):
-    return round(Array * 2) / 2
+    value = round(Array * 2) / 2
+    if value % 1 == 0.5:    
+        return value
+    
+    elif Array % 1 == 0:
+         return value + 0.5
+        
+    else:   
+        newValue = value - Array
+        if newValue / abs(newValue) == 1:
+            return (value - 1) + 0.5
+        else:
+            return value + 0.5
+        
 
 
-def dFinder(n1,n2,lam1,lam2):
+def dFinder(n1,n2,lam1,lam2,M):
     
     if lam1 > lam2:   
-        d = (lam1*lam2) / (2*((lam1*n2)-(lam2*n1)))
+        d = (M*lam1*lam2) / (2*((lam1*n2)-(lam2*n1)))
     else:
-        d = (lam1*lam2) / (2*((lam2*n1)-(lam1*n2)))
+        d = (M*lam1*lam2) / (2*((lam2*n1)-(lam1*n2)))
     
     
     return d
@@ -282,6 +217,11 @@ def Sub_nFinder(T):
     ns = 1/T + np.sqrt(((1/T)**2 - 1))
     
     return ns
+
+def gauss(mean,std,array,yarray):
+   for x in range(0,len(array)):
+        yarray[x] = (1 / (std * np.sqrt(2*np.pi))) * np.exp(-((array[x]-mean)**2)/(2*std**2))
+   return yarray
 
 def main():
     print('Do not run this directly')
