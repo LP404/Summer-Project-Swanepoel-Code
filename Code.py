@@ -132,8 +132,12 @@ for i in range(len(files)):
  
         dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
         vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
-        
-        davg = np.mean(vars()['New_dForMax'+str(i)])    
+ 
+
+    dTrim = vars()['New_dForMax'+str(i)][2:len(vars()['New_dForMax'+str(i)])-2]
+    davg = np.mean(dTrim)    
+
+    for k in range(len(vars()['xNewMax'+str(i)])):
         
         nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*davg)
         #nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
@@ -171,9 +175,11 @@ for i in range(len(files)):
         dCalc = (vars()['mForMin'+str(i)][j] * vars()['xNewMin'+str(i)][j]) / (2*vars()['nForMin'+str(i)][j])
         vars()['New_dForMin'+str(i)] = np.append(vars()['New_dForMin'+str(i)],dCalc)
 
+    dTrim1 = vars()['New_dForMin'+str(i)][2:len(vars()['New_dForMin'+str(i)])-2]
+    davg1 = np.mean(dTrim1)  
    
-        davg1 = np.mean(vars()['New_dForMin'+str(i)])  
-   
+    
+    for j in range(len(vars()['xNewMin'+str(i)])):
         nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*davg1)
         #  nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
