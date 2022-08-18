@@ -157,7 +157,6 @@ def SecondTrim(xMax,yMax,xMin,yMin):
 
     return xMaxT, yMaxT, xMinT, yMinT
 
-
 def FindNearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
@@ -218,10 +217,43 @@ def Sub_nFinder(T):
     
     return ns
 
-def gauss(mean,std,array,yarray):
+def gauss(mean,std,array):
+   yarray = np.zeros(len(array)) 
    for x in range(0,len(array)):
         yarray[x] = (1 / (std * np.sqrt(2*np.pi))) * np.exp(-((array[x]-mean)**2)/(2*std**2))
    return yarray
+
+def ThicknessAcceptance(Lambda,d,CutOff):
+    
+    dInds = d.argsort()
+    d = d[dInds[::-1]]
+    Lambda = Lambda[dInds[::-1]]
+    
+    LambdaDiscard = Lambda[0:CutOff]
+    
+    
+    d = d[CutOff:]
+    Lambda = Lambda[CutOff:]
+    
+    dStd = np.std(d)
+    dMean = np.mean(d)
+    
+    dGauss = gauss(dMean,dStd,d)
+    
+    Multiplier = max(dGauss) / max(Lambda)
+    
+    GoodInds = np.where(Multiplier*Lambda < dGauss)
+    BadInds = np.where(Multiplier*Lambda >= dGauss)
+    
+                
+    RejectedLambda = Lambda[BadInds]
+    RejectedLambda = np.append(RejectedLambda,LambdaDiscard)
+    Newd = d[GoodInds]
+    newMean = np.mean(Newd)
+    error = np.std(Newd) / np.sqrt(len(Newd))
+    
+    
+    return newMean,error,RejectedLambda
 
 def main():
     print('Do not run this directly')

@@ -62,16 +62,16 @@ for i in range(len(files1)):
     
     
 
-for i in range(len(files)):
-    plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
-    # plt.figure(i)
-    plt.minorticks_on()
-    plt.grid(b=True, which='major', color='k', linestyle='-')
-    plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
-    plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
-    plt.title(files[i])
-    plt.xlabel("Wavelength (nm)")
-    plt.ylabel("Transmission/Absorbance")
+# for i in range(len(files)):
+#     plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
+#     # plt.figure(i)
+#     plt.minorticks_on()
+#     plt.grid(b=True, which='major', color='k', linestyle='-')
+#     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
+#     plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
+#     plt.title(files[i])
+#     plt.xlabel("Wavelength (nm)")
+#     plt.ylabel("Transmission/Absorbance")
     
     #np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
 
@@ -102,6 +102,8 @@ for i in range(len(files)):
     vars()['New_dForMin'+str(i)] = np.array([])
     vars()['New_nForMax'+str(i)] = np.array([])
     vars()['New_nForMin'+str(i)] = np.array([])
+    
+    
         
     for k in range(len(vars()['xNewMax'+str(i)])):
     
@@ -133,13 +135,12 @@ for i in range(len(files)):
         dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
         vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
  
-
-    dTrim = vars()['New_dForMax'+str(i)][2:len(vars()['New_dForMax'+str(i)])-2]
-    davg = np.mean(dTrim)    
+    dAvg, dError, RejectedLambdas = F.ThicknessAcceptance(vars()['xNewMax'+str(i)], vars()['New_dForMax'+str(i)], 1)
+ 
 
     for k in range(len(vars()['xNewMax'+str(i)])):
         
-        nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*davg)
+        nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*dAvg)
         #nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
 
@@ -175,17 +176,18 @@ for i in range(len(files)):
         dCalc = (vars()['mForMin'+str(i)][j] * vars()['xNewMin'+str(i)][j]) / (2*vars()['nForMin'+str(i)][j])
         vars()['New_dForMin'+str(i)] = np.append(vars()['New_dForMin'+str(i)],dCalc)
 
-    dTrim1 = vars()['New_dForMin'+str(i)][2:len(vars()['New_dForMin'+str(i)])-2]
-    davg1 = np.mean(dTrim1)  
+
+    dAvg1, dError1, RejectedLambdas1 = F.ThicknessAcceptance(vars()['xNewMin'+str(i)], vars()['New_dForMin'+str(i)], 1) 
    
     
     for j in range(len(vars()['xNewMin'+str(i)])):
-        nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*davg1)
+        nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*dAvg1)
         #  nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
     
     
-    header = ['λ','TM','Tm','n1','d1','m','d2','n2',]
+    header = ['λ','TM','Tm','n1','d1','m','d2','n2','discarded']
+    header1 = ['dAvgMax,dErrorMax','dAvgMin','dErrorMin']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
@@ -194,17 +196,43 @@ for i in range(len(files)):
         writer.writerow(header)
     
         for k in range(len(vars()['xNewMax'+str(i)])):
+            if np.isin(vars()['xNewMax'+str(i)][k],RejectedLambdas) == True:
+                
                 data = [vars()['xNewMax'+str(i)][k],vars()['yNewMax'+str(i)][k],vars()['TmForMax'+str(i)][k], 
                        vars()['nForMax'+str(i)][k],vars()['dForMax'+str(i)][k],vars()['mForMax'+str(i)][k], 
-                       vars()['New_dForMax'+str(i)][k],vars()['New_nForMax'+str(i)][k]]
+                       vars()['New_dForMax'+str(i)][k],vars()['New_nForMax'+str(i)][k],"yes"]
+                writer.writerow(data)
+
+            else:
+                
+                data = [vars()['xNewMax'+str(i)][k],vars()['yNewMax'+str(i)][k],vars()['TmForMax'+str(i)][k], 
+                       vars()['nForMax'+str(i)][k],vars()['dForMax'+str(i)][k],vars()['mForMax'+str(i)][k], 
+                       vars()['New_dForMax'+str(i)][k],vars()['New_nForMax'+str(i)][k],"no"]
                 writer.writerow(data)
     
         for j in range(len(vars()['xNewMin'+str(i)])):
+            if np.isin(vars()['xNewMin'+str(i)][j],RejectedLambdas1) == True:
+                
                 data = [vars()['xNewMin'+str(i)][j],vars()['TMForMin'+str(i)][j],vars()['yNewMin'+str(i)][j], 
                        vars()['nForMin'+str(i)][j],vars()['dForMin'+str(i)][j],vars()['mForMin'+str(i)][j], 
-                       vars()['New_dForMin'+str(i)][j],vars()['New_nForMin'+str(i)][j]]
+                       vars()['New_dForMin'+str(i)][j],vars()['New_nForMin'+str(i)][j],"yes"]
+                writer.writerow(data)
+                
+            else:
+                data = [vars()['xNewMin'+str(i)][j],vars()['TMForMin'+str(i)][j],vars()['yNewMin'+str(i)][j], 
+                       vars()['nForMin'+str(i)][j],vars()['dForMin'+str(i)][j],vars()['mForMin'+str(i)][j], 
+                       vars()['New_dForMin'+str(i)][j],vars()['New_nForMin'+str(i)][j],"no"]
                 writer.writerow(data)
 
+    with open('CSVout/'+files[i]+ '_additional_info.csv','w', encoding='utf-8-sig', newline='') as f1:
+        
+        writer = csv.writer(f1)
+        writer.writerow(header1)
+        data = [dAvg,dError,dAvg1,dError1]
+        writer.writerow(data)
+        
+        
+        
 
             
     # vars()['df'+str(i)] = vars()['df'+str(i)].sort_values('λ')
