@@ -15,10 +15,10 @@ LambdaSort = Lambda[ThiccInds[::-1]]
 ThiccSort = Thicc[ThiccInds[::-1]]
 
 
-# ControlCutOff = 2
+ControlCutOff = 2
 
-# ThiccSort = ThiccSort[ControlCutOff:]
-# LambdaSort = LambdaSort[ControlCutOff:]
+ThiccSort = ThiccSort[ControlCutOff:]
+LambdaSort = LambdaSort[ControlCutOff:]
 
 # TargetVal = (np.mean(ThiccSort)) / 10
 
@@ -27,9 +27,37 @@ Mean = np.mean(ThiccSort)
 
 ThiccGauss = gauss(Mean,Std,ThiccSort)
 
-Multi = max(LambdaSort) / max(ThiccGauss)
+Multi = max(ThiccGauss) / max(LambdaSort)
 
 plt.figure(1)
-plt.scatter(ThiccSort,Multi*ThiccGauss)
+plt.scatter(ThiccSort,ThiccGauss)
 
-plt.scatter(ThiccSort,LambdaSort)
+plt.scatter(ThiccSort,Multi * LambdaSort)
+
+def ThicknessScrub(Lambda,d,CutOff):
+    
+    dInds = d.argsort()
+    d = d[dInds[::-1]]
+    Lambda = Lambda[dInds[::-1]]
+    
+    d = d[CutOff:]
+    Lambda = Lambda[CutOff:]
+    
+    dStd = np.std(d)
+    dMean = np.mean(d)
+    
+    dGauss = gauss(dMean,dStd,d)
+    
+    Multiplier = max(dGauss) / max(Lambda)
+    
+    GoodInds = np.where(Multiplier*Lambda < dGauss)
+    BadInds = np.where(Multi*LambdaSort >= ThiccGauss)
+    
+                
+    RejectedLambda = Lambda[BadInds]
+    Newd = d[GoodInds]
+    newMean = np.mean(Newd)
+    error = np.std(Newd) / np.sqrt(len(Newd))
+    
+    
+    return newMean,error,RejectedLambda
