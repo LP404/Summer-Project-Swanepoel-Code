@@ -224,16 +224,20 @@ def gauss(mean,std,array):
    return yarray
 
 def ThicknessAcceptance(Lambda,d,CutOff):
-    
-    dInds = d.argsort()
-    d = d[dInds[::-1]]
-    Lambda = Lambda[dInds[::-1]]
-    
+
+    LambdaInds = Lambda.argsort()
+    d = d[LambdaInds[::1]]
+    Lambda = Lambda[LambdaInds[::1]]
+
     LambdaDiscard = Lambda[0:CutOff]
-    
     
     d = d[CutOff:]
     Lambda = Lambda[CutOff:]
+
+    dInds = d.argsort()
+    d = d[dInds[::1]]
+    Lambda = Lambda[dInds[::1]]
+    
     
     dStd = np.std(d)
     dMean = np.mean(d)
