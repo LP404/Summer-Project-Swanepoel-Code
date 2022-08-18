@@ -205,7 +205,7 @@ for i in range(len(files)):
     
     
     header = ['λ','TM','Tm','n1','d1','m','d2','n2','discarded']
-    header1 = ['dAvg,dError']
+    header1 = ['dAvg','dError']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
