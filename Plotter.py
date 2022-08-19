@@ -7,7 +7,7 @@ from operator import itemgetter
 #     return(sorted(List, map(itemgetter(0), List ))) 
 
 #Swanepoel Range Control
-SRC = 0
+SRC = 2
 
 def ListSort(List):
     return(sorted(List, key = lambda x: x[0]))   
