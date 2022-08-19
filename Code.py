@@ -126,15 +126,6 @@ for i in range(len(files)):
     dFin = F.dFinder(vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],len(vars()['xNewMax'+str(i)]))
     vars()['dForMax'+str(i)] = np.append(vars()['dForMax'+str(i)],abs(dFin))
     
-    for k in range(len(vars()['xNewMax'+str(i)])):
-
-        mCalc =  (2*vars()['nForMax'+str(i)][k]*vars()['dForMax'+str(i)][k]) / vars()['xNewMax'+str(i)][k]
-        vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
- 
-        dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
-        vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
- 
-       
     for j in range(len(vars()['xNewMin'+str(i)])):
         
         
@@ -158,8 +149,22 @@ for i in range(len(files)):
     vars()['dForMin'+str(i)] = np.append(vars()['dForMin'+str(i)],abs(dFin1))    
 
     
+    d1Combi = np.append(vars()['dForMax'+str(i)],vars()['dForMin'+str(i)])
+    LambdaCombi = np.append(vars()['xNewMax'+str(i)],vars()['xNewMin'+str(i)])
+    
+    d1Avg, d1Error, RejectedLambdas1 = F.ThicknessAcceptance(LambdaCombi,d1Combi,0) 
+    
+    for k in range(len(vars()['xNewMax'+str(i)])):
+
+        mCalc =  (2*vars()['nForMax'+str(i)][k]*d1Avg) / vars()['xNewMax'+str(i)][k]
+        vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
+ 
+        dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
+        vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
+ 
+
     for j in range(len(vars()['xNewMin'+str(i)])):
-        mCalc1 =  (2*vars()['nForMin'+str(i)][j]*vars()['dForMin'+str(i)][j]) / vars()['xNewMin'+str(i)][j]
+        mCalc1 =  (2*vars()['nForMin'+str(i)][j]*d1Avg) / vars()['xNewMin'+str(i)][j]
         vars()['mForMin'+str(i)] = np.append(vars()['mForMin'+str(i)],F.round_off_rating(mCalc1))
 
 
@@ -168,26 +173,24 @@ for i in range(len(files)):
 
     
     d2Combi = np.append(vars()['New_dForMax'+str(i)],vars()['New_dForMin'+str(i)])
-    LambdaCombi = np.append(vars()['xNewMax'+str(i)],vars()['xNewMin'+str(i)])
-
-    dAvg, dError, RejectedLambdas = F.ThicknessAcceptance(LambdaCombi,d2Combi, 2) 
+    
+    d2Avg, d2Error, RejectedLambdasD2 = F.ThicknessAcceptance(LambdaCombi,d2Combi, 2) 
    
 
     for k in range(len(vars()['xNewMax'+str(i)])):
         
-        nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*dAvg)
+        nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*d2Avg)
         #nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
     
     for j in range(len(vars()['xNewMin'+str(i)])):
-        nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*dAvg)
+        nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*d2Avg)
         #  nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
     
     
     TMcombi = np.append(vars()['yNewMax'+str(i)],vars()['TMForMin'+str(i)])
     TmCombi = np.append(vars()['TmForMax'+str(i)],vars()['yNewMin'+str(i)])
-    d1Combi = np.append(vars()['dForMax'+str(i)],vars()['dForMin'+str(i)])
     n1Combi = np.append(vars()['nForMax'+str(i)],vars()['nForMin'+str(i)])
     mCombi = np.append(vars()['mForMax'+str(i)],vars()['mForMin'+str(i)])
     n2Combi = np.append(vars()['New_nForMax'+str(i)],vars()['New_nForMin'+str(i)])
@@ -219,7 +222,7 @@ for i in range(len(files)):
     
     
     header = ['λ (nm)','TM','Tm','n1','d1 (nm)','m','d2 (nm)','n2','κ','α (cm^-1)','discarded']
-    header1 = ['dAvg (nm)','dError (nm)']
+    header1 = ['d1Avg (nm)','d1Error (nm)','d2Avg (nm)','d2Error (nm)']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
@@ -228,7 +231,7 @@ for i in range(len(files)):
         writer.writerow(header)
     
         for k in range(len(LambdaCombi)):
-            if np.isin(LambdaCombi[k],RejectedLambdas) == True:
+            if np.isin(LambdaCombi[k],RejectedLambdasD2) == True:
                 
                 data = [LambdaCombi[k],TMcombi[k],TmCombi[k], 
                        n1Combi[k],d1Combi[k],mCombi[k], 
@@ -246,7 +249,7 @@ for i in range(len(files)):
         
         writer = csv.writer(f1)
         writer.writerow(header1)
-        data = [dAvg,dError]
+        data = [d1Avg,d1Error,d2Avg,d2Error]
         writer.writerow(data)
         
         
