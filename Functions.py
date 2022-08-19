@@ -157,7 +157,7 @@ def SecondTrim(xMax,yMax,xMin,yMin):
 
     return xMaxT, yMaxT, xMinT, yMinT
 
-def FindNearest(array, value):
+def FindNearestVal(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return array[idx]
