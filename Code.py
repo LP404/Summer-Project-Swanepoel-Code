@@ -62,29 +62,29 @@ for i in range(len(files1)):
     
     
 
-for i in range(len(files)):
-    plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
-    # plt.figure(i)
-    plt.minorticks_on()
-    plt.grid(b=True, which='major', color='k', linestyle='-')
-    plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
-    plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
-    plt.title(files[i])
-    plt.xlabel("Wavelength (nm)")
-    plt.ylabel("Transmission/Absorbance")
+# for i in range(len(files)):
+#     plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
+#     # plt.figure(i)
+#     plt.minorticks_on()
+#     plt.grid(b=True, which='major', color='k', linestyle='-')
+#     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
+#     plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
+#     plt.title(files[i])
+#     plt.xlabel("Wavelength (nm)")
+#     plt.ylabel("Transmission/Absorbance")
     
-    np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
+#     # np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
 
 
-    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x", label = "Maxima")
-    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x", label = "Minima")
-    plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted", label = "TM")
-    plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted", label = "Tm")
+#     plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMax'+str(i)], color = 'black', marker = "x", label = "Maxima")
+#     plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMin'+str(i)], color = 'red', marker = "x", label = "Minima")
+#     plt.plot(xP,vars()['yPMax'+str(i)], color = 'black', linestyle="dotted", label = "TM")
+#     plt.plot(xP,vars()['yPMin'+str(i)], color = 'red', linestyle="dotted", label = "Tm")
     
-for i in range(len(files1)):   
-    plt.plot(xP,vars()['yP'+files1[i]], color = 'orange', label = "Substrate")
+# for i in range(len(files1)):   
+#     plt.plot(xP,vars()['yP'+files1[i]], color = 'orange', label = "Substrate")
     
-plt.legend()
+# plt.legend()
     
 
 for i in range(len(files)):
@@ -107,7 +107,7 @@ for i in range(len(files)):
     for k in range(len(vars()['xNewMax'+str(i)])):
     
         
-        Loc = np.where(xP == F.FindNearest(xP,vars()['xNewMax'+str(i)][k]))[0][0]
+        Loc = np.where(xP == F.FindNearestVal(xP,vars()['xNewMax'+str(i)][k]))[0][0]
         Opp = vars()['yPMin'+str(i)][Loc]   
         vars()['TmForMax'+str(i)] = np.append(vars()['TmForMax'+str(i)],Opp)
         Sub = vars()['nS'+files1[0]][Loc]
@@ -138,7 +138,7 @@ for i in range(len(files)):
     for j in range(len(vars()['xNewMin'+str(i)])):
         
         
-        Loc1 = np.where(xP == F.FindNearest(xP,vars()['xNewMin'+str(i)][j]))[0][0]
+        Loc1 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMin'+str(i)][j]))[0][0]
         Opp1 = vars()['yPMax'+str(i)][Loc1]   
         vars()['TMForMin'+str(i)] = np.append(vars()['TMForMin'+str(i)],Opp1)
         Sub1 = vars()['nS'+files1[0]][Loc1]
@@ -204,8 +204,22 @@ for i in range(len(files)):
     n2Combi = n2Combi[LambdaInds[::1]]
     
     
-    header = ['λ','TM','Tm','n1','d1','m','d2','n2','discarded']
-    header1 = ['dAvg','dError']
+    Index = np.array([])
+    
+    for k in range(len(LambdaCombi)):
+        IndexVal = np.where(LambdaCombi[k] == np.around(xP,1))[0][0]
+        Index = np.append(Index,IndexVal)
+        
+        
+    Fval = 4 * n2Combi**2 * vars()['nS'+files1[0]][Index.astype(int)] * ((TMcombi + TmCombi)/(TMcombi*TmCombi))
+    x = (Fval - np.sqrt(Fval**2 - ((n2Combi**2 - 1)**3  * (n2Combi**2 - vars()['nS'+files1[0]][Index.astype(int)]**4 ))))/ ((n2Combi-1)**3 * (n2Combi-vars()['nS'+files1[0]][Index.astype(int)]**2))
+    
+    kVal = (-LambdaCombi / (4 * np.pi * d2Combi)) * np.log(x)
+    alphaVal = ((4 * np.pi * kVal) / LambdaCombi) * 1e7
+    
+    
+    header = ['λ (nm)','TM','Tm','n1','d1 (nm)','m','d2 (nm)','n2','κ','α (cm^-1)','discarded']
+    header1 = ['dAvg (nm)','dError (nm)']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
@@ -218,14 +232,14 @@ for i in range(len(files)):
                 
                 data = [LambdaCombi[k],TMcombi[k],TmCombi[k], 
                        n1Combi[k],d1Combi[k],mCombi[k], 
-                       d2Combi[k],n2Combi[k],"yes"]
+                       d2Combi[k],n2Combi[k],kVal[k],alphaVal[k],"yes"]
                 writer.writerow(data)
 
             else:
                 
                 data = [LambdaCombi[k],TMcombi[k],TmCombi[k], 
                        n1Combi[k],d1Combi[k],mCombi[k], 
-                       d2Combi[k],n2Combi[k],"no"]
+                       d2Combi[k],n2Combi[k],kVal[k],alphaVal[k],"no"]
                 writer.writerow(data)
 
     with open('CSVout/'+files[i]+ '_additional_info.csv','w', encoding='utf-8-sig', newline='') as f1:
