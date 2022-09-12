@@ -385,7 +385,7 @@ for i in range(len(files)):
         
         for l in range(len(Abs)):
             data = [xP[l],Abs[l]]
-        writer.writerow(data)
+            writer.writerow(data)
 
             
     # vars()['df'+str(i)] = vars()['df'+str(i)].sort_values('λ')
