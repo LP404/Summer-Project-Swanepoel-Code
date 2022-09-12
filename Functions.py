@@ -242,7 +242,7 @@ def ThicknessAcceptance(Lambda,d,CutOff):
     dStd = np.std(d)
     dMean = np.mean(d)
     
-    dGauss = gauss(dMean,dStd,d)
+    dGauss = gauss(dMean,2*dStd,d)
     
     Multiplier = max(dGauss) / max(Lambda)
     
