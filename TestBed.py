@@ -1,63 +1,46 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
-def gauss(mean,std,array):
-   yarray = np.zeros(len(array)) 
-   for x in range(0,len(array)):
-        yarray[x] = (1 / (std * np.sqrt(2*np.pi))) * np.exp(-((array[x]-mean)**2)/(2*std**2))
-   return yarray
-
-Lambda = np.array([292,302,314,327,341,358,376,397,421,449,482,519,565,618,685,769,296,307,319,333,349,366,386,408,434,464,499,540,590,649,722])
-Thicc = np.array([4635.34456,2165.840875,2683.106913,1419.97695,1611.031029,1746.734817,1677.946119,1591.554847,1607.481509,1595.678189,1561.901806,1364.72997,1791.615589,1590.266815,1776.040617,1872.726431,2658.374403,4116.196434,1236.028022,1951.660233,1571.435833,1776.551548,1619.634968,1590.113786,1686.409821,1459.758653,1612.8373,1339.562859,1920.921311,1583.824594,1833.15318])
-
-ThiccInds = Thicc.argsort()
-LambdaSort = Lambda[ThiccInds[::-1]]
-ThiccSort = Thicc[ThiccInds[::-1]]
-
-
-ControlCutOff = 2
-
-ThiccSort = ThiccSort[ControlCutOff:]
-LambdaSort = LambdaSort[ControlCutOff:]
-
-# TargetVal = (np.mean(ThiccSort)) / 10
-
-Std = np.std(ThiccSort)
-Mean = np.mean(ThiccSort)
-
-ThiccGauss = gauss(Mean,Std,ThiccSort)
-
-Multi = max(ThiccGauss) / max(LambdaSort)
-
-plt.figure(1)
-plt.scatter(ThiccSort,ThiccGauss)
-
-plt.scatter(ThiccSort,Multi * LambdaSort)
-
-def ThicknessScrub(Lambda,d,CutOff):
+def dFinder(n1,n2,lam1,lam2,M):
     
-    dInds = d.argsort()
-    d = d[dInds[::-1]]
-    Lambda = Lambda[dInds[::-1]]
-    
-    d = d[CutOff:]
-    Lambda = Lambda[CutOff:]
-    
-    dStd = np.std(d)
-    dMean = np.mean(d)
-    
-    dGauss = gauss(dMean,dStd,d)
-    
-    Multiplier = max(dGauss) / max(Lambda)
-    
-    GoodInds = np.where(Multiplier*Lambda < dGauss)
-    BadInds = np.where(Multi*LambdaSort >= ThiccGauss)
-    
-                
-    RejectedLambda = Lambda[BadInds]
-    Newd = d[GoodInds]
-    newMean = np.mean(Newd)
-    error = np.std(Newd) / np.sqrt(len(Newd))
+    if lam1 > lam2:   
+        d = (M*lam1*lam2) / (2*((lam1*n2)-(lam2*n1)))
+    else:
+        d = (M*lam1*lam2) / (2*((lam2*n1)-(lam1*n2)))
     
     
-    return newMean,error,RejectedLambda
+    return d
+
+def nFinder(TM,Tm,s):
+    
+    N = (2*s) * ((TM - Tm) / (TM*Tm)) + ((s**2 + 1)/2)
+    
+    nA = np.sqrt((N**2 - s**2))
+    n = np.sqrt((N + nA)) 
+    
+    
+    return n
+
+
+LamList = np.array([286,313,350,402,475,596,786])
+TMList = np.array([0.583027823,0.609188692,0.620723579,0.630604666,0.64205607,0.654810598,0.685658897])
+TmList = np.array([0.567578925,0.579432267,0.592258056,0.603419348,0.61491902,0.631710221,0.640391554])
+sList = np.array([1.9403124596558827,1.8976911029453674,1.866949708602932,1.840751273585143,1.8107335892234522,1.7884435041583395,1.7702315367671904])
+dList = np.array([])
+dList2 = np.array([])
+
+
+NList = ((2*sList) * ((TMList-TmList)/(TMList*TmList))) + ((sList**2 + 1)/2)
+
+nList = np.sqrt((NList + np.sqrt((NList**2 - sList**2))))
+
+for i in range(1,len(LamList)):
+    dVal2 = dFinder(nList[i],nList[i-1],LamList[i],LamList[i-1],1)
+    dList2 = np.append(dList2,dVal2)
+
+dSpecial2 = dFinder(nList[len(LamList)-1],nList[0],LamList[len(LamList)-1],LamList[0],(len(LamList)-1))
+dList2 = np.append(dList2,dSpecial2)
+
+mList = np.around(((np.mean(dList2[1:]) * 2 * nList) / LamList),0)
+d2List2 = (mList * LamList) / (2 * nList)
+
+n2List2 = (mList * LamList) / (2 * np.mean(d2List2))
