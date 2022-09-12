@@ -369,7 +369,7 @@ for i in range(len(files)):
                         d2Combi[k],n2Combi[k],kVal[k],alphaVal[k],alphaVal2[k],"no"]
                 writer.writerow(data)
 
-    with open('CSVout/Additional_Info/'+files[i]+ '_additional_info.csv','w', encoding='utf-8-sig', newline='') as f1:
+    with open('CSVout/Additional_Info/'+files[i]+ '_means.csv','w', encoding='utf-8-sig', newline='') as f1:
         
         writer = csv.writer(f1)
         writer.writerow(header1)
