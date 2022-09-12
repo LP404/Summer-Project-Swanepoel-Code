@@ -47,7 +47,7 @@ for i in range(len(files)):
     
     for j in range(len(vars()[files[i]+'Data'])):
 
-        if vars()[files[i]+'Data'][j][10] == True:    
+        if vars()[files[i]+'Data'][j][13] == True:    
             vars()[files[i]+'Delte_Rows'].append(j)
      
     vars()[files[i]+'Delte_Rows'] = sorted(vars()[files[i]+'Delte_Rows'],reverse=True)
@@ -81,17 +81,17 @@ for i in range(len(files)):
     plt.minorticks_on()
     plt.grid(b=True, which='major', color='k', linestyle='-')
     plt.grid(b=True, which='minor', color='darkgray', linestyle='--')
-    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],3), label = files[i]+" n1")
-    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],7), label = files[i]+" n2")
+    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],5), label = files[i]+" n1")
+    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],9), label = files[i]+" n2")
     plt.title(files[i])
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("Refractive Index")
     plt.legend()
     
   
-    n = np.array(ListExtract(vars()[files[i]+'Data'],7))
+    n = np.array(ListExtract(vars()[files[i]+'Data'],9))
     Lam = np.array(ListExtract(vars()[files[i]+'Data'],0))
-    m1 = ListExtract(vars()[files[i]+'Data'],5)[len(ListExtract(vars()[files[i]+'Data'],5))-1]
+    m1 = ListExtract(vars()[files[i]+'Data'],7)[len(ListExtract(vars()[files[i]+'Data'],7))-1]
     y =  np.arange(0,len(n),1) / 2
     x = n/Lam
     vars()[files[i]+'FitVals'] = linregress(x,y)
@@ -107,13 +107,13 @@ for i in range(len(files)):
 
     plt.figure(200+i)
     plt.title(files[i]+ 'Extinction Coeffiecent')
-    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],8))
+    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],10))
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("κ")
     
  
     plt.figure(300+i)
     plt.title(files[i]+ 'Absorbtion Coeffiecent')
-    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],9))
+    plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],11))
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("α (cm^-1)")
