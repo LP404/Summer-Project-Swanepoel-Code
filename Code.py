@@ -344,7 +344,7 @@ for i in range(len(files)):
     
     header = ['λ (nm)','TMS','TmS','TM','Tm','n1','d1 (nm)','m','d2 (nm)','n2','κ','α1 (cm^-1)','α2 (cm^-1)','discarded']
     header1 = ['d1Avg (nm)','d1Error (nm)','d2Avg (nm)','d2Error (nm)']
-    header2 = ['α (cm^-1)']
+    header2 = ['λ (nm)','α (cm^-1)']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
@@ -384,7 +384,7 @@ for i in range(len(files)):
         writer.writerow(header2)
         
         for l in range(len(Abs)):
-            data = [Abs[l]]
+            data = [xP[l],Abs[l]]
         writer.writerow(data)
 
             
