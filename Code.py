@@ -6,6 +6,8 @@ import csv
 
 #dt = 1
 
+h = 6.63e-34
+c = 3e8
 
 #Importing and setting up data for processing
 
@@ -344,7 +346,7 @@ for i in range(len(files)):
     
     header = ['λ (nm)','TMS','TmS','TM','Tm','n1','d1 (nm)','m','d2 (nm)','n2','κ','α1 (cm^-1)','α2 (cm^-1)','discarded']
     header1 = ['d1Avg (nm)','d1Error (nm)','d2Avg (nm)','d2Error (nm)']
-    header2 = ['λ (nm)','α (cm^-1)']
+    header2 = ['λ (nm)','T','hv','α (cm^-1)','k']
     
     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
@@ -369,22 +371,31 @@ for i in range(len(files)):
                         d2Combi[k],n2Combi[k],kVal[k],alphaVal[k],alphaVal2[k],"no"]
                 writer.writerow(data)
 
-    with open('CSVout/Additional_Info/'+files[i]+ '_means.csv','w', encoding='utf-8-sig', newline='') as f1:
+    with open('CSVout/Thickness/'+files[i]+ '_Thickness.csv','w', encoding='utf-8-sig', newline='') as f1:
         
         writer = csv.writer(f1)
         writer.writerow(header1)
         data = [d1Avg,d1Error,d2Avg,d2Error]
         writer.writerow(data)
         
-    Abs = np.sqrt((vars()['yPMax'+str(i)]  * vars()['yPMin'+str(i)])) * 1e7
+    Trn = np.sqrt((vars()['yPMax'+str(i)]  * vars()['yPMin'+str(i)]))
     
-    with open('CSVout/Additional_Info/'+files[i]+ '_absorption.csv','w', encoding='utf-8-sig', newline='') as f2:
+    # #hv is identical for all measuremnts 
+    hv = ((h * c) / (xP * 1e-9)) * 6.242e18
+    alpha3 = ((np.log((1/Trn))) / d2Avg) * 1e7
+    
+    k = (alpha3*xP / 4*np.pi) / 1e7 
+    
+    k = np.log
+    
+    
+    with open('CSVout/Absorption/'+files[i]+ '_Absorption.csv','w', encoding='utf-8-sig', newline='') as f2:
          
         writer = csv.writer(f2)
         writer.writerow(header2)
         
-        for l in range(len(Abs)):
-            data = [xP[l],Abs[l]]
+        for l in range(len(Trn)):
+            data = [xP[l],Trn[l],hv[l],alpha3[l],k[l]]
             writer.writerow(data)
 
             
