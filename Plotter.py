@@ -13,7 +13,8 @@ def ListExtract(List,IndVal):
     return [Index[IndVal] for Index in List]
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Plotter.py')) + '\\CSVout'))
-path1, dirs1, files1 = next(os.walk(os.path.dirname(os.path.realpath('Plotter.py')) + '\\CSVout\\Additional_Info'))
+path1, dirs1, files1 = next(os.walk(os.path.dirname(os.path.realpath('Plotter.py')) + '\\CSVout\\Thickness'))
+path2, dirs2, files2 = next(os.walk(os.path.dirname(os.path.realpath('Plotter.py')) + '\\CSVout\\Absorption'))
 
 suffix = ".csv"
 for i in range(len(files)):
@@ -75,6 +76,24 @@ for i in range(len(files1)):
         for k in range(len(vars()[files1[i]+'_Data'][j])):
                 vars()[files1[i]+'_Data'][j][k] = float(vars()[files1[i]+'_Data'][j][k])
                 
+for i in range(len(files2)):
+    files2[i] = files2[i][:-len(suffix)]  
+
+    rows2 = []
+    
+    with open(str(path2)+"\\"+files2[i]+ '.csv','r', encoding='utf-8-sig', newline='') as f2:
+        csvreader2 = csv.reader(f2)
+        header2 = next(csvreader2)
+    
+        for row2 in csvreader2:
+            rows2.append(row2)
+    
+    vars()[files2[i]+'_Data'] = rows2
+    
+    for j in range(len(vars()[files2[i]+'_Data'])):
+        for k in range(len(vars()[files2[i]+'_Data'][j])):
+                vars()[files2[i]+'_Data'][j][k] = float(vars()[files2[i]+'_Data'][j][k])
+                
 for i in range(len(files)):
     # plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
     plt.figure(i)
@@ -117,3 +136,34 @@ for i in range(len(files)):
     plt.scatter(ListExtract(vars()[files[i]+'Data'],0),ListExtract(vars()[files[i]+'Data'],11))
     plt.xlabel("Wavelength (nm)")
     plt.ylabel("α (cm^-1)")
+    
+    
+for i in range(len(files2)):
+    Lam = np.array(ListExtract(vars()[files2[i]+'_Data'],0))
+    hv = np.array(ListExtract(vars()[files2[i]+'_Data'],2))
+    alpha = np.array(ListExtract(vars()[files2[i]+'_Data'],3))
+    k = np.array(ListExtract(vars()[files2[i]+'_Data'],4))
+    
+    plt.figure(400+i)
+    plt.title(files2[i]+ 'Extinction Coeffiecent')
+    plt.plot(Lam,k)
+    plt.xlabel("Wavelength (nm)")
+    plt.ylabel("κ")
+    
+ 
+    plt.figure(500+i)
+    plt.title(files2[i]+ 'Absorbtion Coeffiecent')
+    plt.plot(hv,alpha)
+    plt.xlabel('hv (eV)')
+    plt.ylabel("α (cm^-1)")
+    
+    DirectAllowed = (alpha*hv)**2
+    IndirectAllowed = (alpha*hv)**0.5
+    DirectDisallowed = (alpha*hv)**(2/3)
+    IndirectDisallowed = (alpha*hv)**(1/3)
+    
+    plt.figure(600+i)
+    plt.title(files2[i]+ 'Direct Bandgap')
+    plt.plot(hv,DirectAllowed)
+    plt.xlabel('hv (eV)')
+    plt.ylabel('αhv^2 (cm^-1 eV)^2')  
