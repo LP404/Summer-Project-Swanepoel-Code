@@ -385,9 +385,7 @@ for i in range(len(files)):
     alpha3 = ((np.log((1/Trn))) / d2Avg) * 1e7
     
     k = (alpha3*xP / 4*np.pi) / 1e7 
-    
-    k = np.log
-    
+        
     
     with open('CSVout/Absorption/'+files[i]+ '_Absorption.csv','w', encoding='utf-8-sig', newline='') as f2:
          
