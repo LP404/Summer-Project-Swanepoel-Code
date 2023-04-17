@@ -113,7 +113,7 @@ def BackNodeFix(Val1,Val2,xArray,yArray,xMax,yMax,xMin,yMin):
     
     return xMax,yMax,xMin,yMin
 
-
+#For use with the ThorLabsSapphire.txt
 def DYThorLabs(Array):
     
       newXarray = np.array([])
@@ -223,20 +223,23 @@ def gauss(mean,std,array):
         yarray[x] = (1 / (std * np.sqrt(2*np.pi))) * np.exp(-((array[x]-mean)**2)/(2*std**2))
    return yarray
 
-def ThicknessAcceptance(Lambda,d,CutOff):
+def ThicknessAcceptance(Lambda,d,CutOff,dErr):
 
     LambdaInds = Lambda.argsort()
     d = d[LambdaInds[::1]]
     Lambda = Lambda[LambdaInds[::1]]
+    dErr = dErr[LambdaInds[::1]]
 
     LambdaDiscard = Lambda[0:CutOff]
     
     d = d[CutOff:]
     Lambda = Lambda[CutOff:]
+    dErr = dErr[CutOff:]
 
     dInds = d.argsort()
     d = d[dInds[::1]]
     Lambda = Lambda[dInds[::1]]
+    dErr = dErr[dInds[::1]]
     
     
     dStd = np.std(d)
@@ -253,11 +256,162 @@ def ThicknessAcceptance(Lambda,d,CutOff):
     RejectedLambda = Lambda[BadInds]
     RejectedLambda = np.append(RejectedLambda,LambdaDiscard)
     Newd = d[GoodInds]
+    
+    NewdErr = dErr[GoodInds]
+    dUncert = avgUncert(NewdErr)
+    
     newMean = np.mean(Newd)
     error = np.std(Newd) / np.sqrt(len(Newd))
     
     
-    return newMean,error,RejectedLambda
+    return newMean,error,RejectedLambda,dUncert
+
+
+def PerToAbs(PerUncert,Val):
+    AbsUncert = (PerUncert/100)*Val
+    return AbsUncert
+
+def AbsToPer(AbsUncert,Val):
+    PerUncert = (AbsUncert/Val)*100
+    return PerUncert
+
+#Used to add uncetanties together for either absolutes for add/subtract or percentages for multuplt/deivide
+def LinearCombine(Uncert1,Uncert2):
+    CombiUncert = np.sqrt((abs(Uncert1)**2 + abs(Uncert2)**2))
+    return CombiUncert
+
+def MultiDivUncert(Uncert1,Uncert2,Val1,Val2):
+    CombiUncert = (np.sqrt(((abs(Uncert1)/Val1)**2) + ((abs(Uncert2)/Val2)**2))) * 100
+    return CombiUncert
+
+def ExpoUncert(Uncert,Val,Expo):
+    NewUncert = Expo*((abs(Uncert)/Val)*100)
+    return NewUncert
+
+def ScalingUncert(Uncert,Scalar):
+    return (Uncert*Scalar)
+
+def nUncertFinder(TUncert,TM,Tm,n):
+    
+    NUncertNume = LinearCombine(TUncert,TUncert)
+    NUncertDenom = MultiDivUncert(TUncert,TUncert,TM,Tm)
+    
+    Tdiff = TM-Tm
+    Tprod = TM*Tm
+    
+    NUncertNumePer = AbsToPer(NUncertNume,Tdiff)
+    
+    NUncertPer = LinearCombine(NUncertNumePer,NUncertDenom)
+    
+    NComp = Tdiff/Tprod
+    
+    NUncertAbs = PerToAbs(NUncertPer,NComp)
+    
+    NUncert = ScalingUncert(NUncertAbs,2)
+    
+    nUncertPer = ExpoUncert(NUncert,n,0.5)
+    
+    nUncert = PerToAbs(nUncertPer,n)
+
+    return nUncert
+
+
+def dUncert(Lam1,Lam2,n1,n2,d,LamUncert,n1Uncert,n2Uncert):
+    
+    LamProd = Lam1*Lam2
+    
+    Prod12 = Lam1*n2
+    Prod21 = Lam2*n1
+    
+    
+    dDom = 2*abs((Lam1*n2 - Lam2*n1))
+    
+    dNumUncert = MultiDivUncert(LamUncert, LamUncert, Lam1, Lam2)
+    
+    dNumUncertAbs = PerToAbs(dNumUncert,LamProd)
+    
+    dDomUncertPartA = MultiDivUncert(LamUncert,n1Uncert,Lam2,n1) 
+    dDomUncertPartB = MultiDivUncert(LamUncert,n2Uncert,Lam1,n2)
+    
+    dDomUncertPartAabs = PerToAbs(dDomUncertPartA,Prod21)
+    dDomUncertPartBabs = PerToAbs(dDomUncertPartB,Prod12)
+    
+    dDomUncertPartC = LinearCombine(dDomUncertPartAabs,dDomUncertPartBabs)
+    
+    dDomUncertPartD = ScalingUncert(dDomUncertPartC, 2)
+    
+    dUncert = MultiDivUncert(dNumUncertAbs,dDomUncertPartD,LamProd,dDom)
+    
+    dUncertAbs = PerToAbs(dUncert, d)
+    
+    return dUncertAbs
+
+def avgUncert(vals):
+    
+    Num = 0
+    
+    for i in vals:
+        Num += i**2
+        
+    Num = np.sqrt(Num)
+    
+    Den = len(vals)
+    
+    Uncert = Num/Den
+    
+    return Uncert
+
+
+def mUncert(n,d,Lam,nUncert,dUncert,LamUncert,m):
+    
+    Num = n*d
+    
+    NumUncert = MultiDivUncert(nUncert,dUncert,n,d)
+    
+    NumUncertAbs = PerToAbs(NumUncert,Num) 
+    
+    mUncertPer = MultiDivUncert(NumUncertAbs,LamUncert,Num,Lam)
+    
+    mUncertAbs = PerToAbs(mUncertPer,m)
+    
+    mUncert = 2*mUncertAbs
+    
+    return mUncert
+
+
+def d2Uncert(n,m,Lam,nUncert,mUncert,LamUncert,d):
+
+    Num = m*Lam
+    
+    NumUncert = MultiDivUncert(mUncert,LamUncert,m,Lam)
+    
+    NumUncertAbs = PerToAbs(NumUncert,Num) 
+    
+    dUncertPer = MultiDivUncert(NumUncertAbs,nUncert,Num,n)
+    
+    dUncertAbs = PerToAbs(dUncertPer,d)
+    
+    dUncert = dUncertAbs/2    
+    
+    return dUncert
+
+
+def n2Uncert(d,m,Lam,dUncert,mUncert,LamUncert,n):
+    
+    Num = m*Lam
+    
+    NumUncert = MultiDivUncert(mUncert,LamUncert,m,Lam)
+    
+    NumUncertAbs = PerToAbs(NumUncert,Num) 
+    
+    nUncertPer = MultiDivUncert(NumUncertAbs,dUncert,Num,d)
+    
+    nUncertAbs = PerToAbs(nUncertPer,n)
+    
+    nUncert = nUncertAbs/2    
+    
+    return nUncert
+
 
 def main():
     print('Do not run this directly')
