@@ -2,9 +2,6 @@ import numpy as np
 from scipy.signal import argrelextrema
 from scipy.signal import lfilter, lfilter_zi, filtfilt, butter
 
-
-
-
 def Trim(Array,start,end):
     delPoints = np.where((Array[0] < start) | (Array[0] > end))[0]
     
@@ -223,7 +220,7 @@ def gauss(mean,std,array):
         yarray[x] = (1 / (std * np.sqrt(2*np.pi))) * np.exp(-((array[x]-mean)**2)/(2*std**2))
    return yarray
 
-def ThicknessAcceptance(Lambda,d,CutOff,dErr):
+def ThicknessAcceptance(Lambda,d,CutOff,dErr,stdScale):
 
     LambdaInds = Lambda.argsort()
     d = d[LambdaInds[::1]]
@@ -245,7 +242,7 @@ def ThicknessAcceptance(Lambda,d,CutOff,dErr):
     dStd = np.std(d)
     dMean = np.mean(d)
     
-    dGauss = gauss(dMean,2*dStd,d)
+    dGauss = gauss(dMean,stdScale*dStd,d)
     
     Multiplier = max(dGauss) / max(Lambda)
     
@@ -258,13 +255,13 @@ def ThicknessAcceptance(Lambda,d,CutOff,dErr):
     Newd = d[GoodInds]
     
     NewdErr = dErr[GoodInds]
-    dUncert = avgUncert(NewdErr)
+    dErr = avgUncert(NewdErr)
     
     newMean = np.mean(Newd)
     error = np.std(Newd) / np.sqrt(len(Newd))
     
     
-    return newMean,error,RejectedLambda,dUncert
+    return newMean,error,RejectedLambda,dErr
 
 
 def PerToAbs(PerUncert,Val):
@@ -345,6 +342,25 @@ def dUncert(Lam1,Lam2,n1,n2,d,LamUncert,n1Uncert,n2Uncert):
     dUncertAbs = PerToAbs(dUncert, d)
     
     return dUncertAbs
+
+
+def dUncerIgnN(Lam1,Lam2,n1,n2,d,LamUncert):
+    
+    LamProd = Lam1*Lam2
+    dNumUncert = MultiDivUncert(LamUncert, LamUncert, Lam1, Lam2)
+    dNumUncertAbs = PerToAbs(dNumUncert,LamProd)
+    
+    dDom = 2*abs((Lam1*n2 - Lam2*n1))
+    
+    dDomUncertPartA = LinearCombine(LamUncert,LamUncert)
+    dDomUncertPartB = ScalingUncert(dDomUncertPartA, 2)
+    dUncert = MultiDivUncert(dNumUncertAbs,dDomUncertPartB,LamProd,dDom)
+    
+    dUncertAbs = PerToAbs(dUncert, d)
+    
+    
+    return dUncertAbs
+    
 
 def avgUncert(vals):
     
