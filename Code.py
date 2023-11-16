@@ -20,8 +20,12 @@ Slitwidth = 2
 
 xMin = 200
 xMax = 800
-EnableMultiplier = 1
+EnableMultiplier = 2
 
+#Disable multiplier before using
+EnableCorrection = True
+
+EnableMultiplier = 3
 
 GaN = False
 
@@ -69,7 +73,72 @@ for i in range(len(files)):
 
     #Change 0.075 back to 0.2
     vars()['yFiltered'+str(i)] = F.NoiseFilter(3,0.2,vars()[files[i]+'T'][1])
-            
+    
+    
+    if i == 0:
+        #All the xValues are the same, only need to do this once
+        xP = np.linspace(min(vars()[files[i]+'T'][0]),max(vars()[files[i]+'T'][0]),10001)
+    else:
+        pass
+
+for i in range(len(files1)):
+    files1[i] = files1[i].rstrip(".txt")
+    
+    vars()[files1[i]] = np.loadtxt(open(path1 + "\\" + files1[i] + ".txt", "rb"), delimiter=",",skiprows = 2).T
+    
+    #This can be commented out with an alternet approach
+    vars()[files1[i]][0] = vars()[files1[i]][0]
+    
+    vars()[files1[i]][1] = vars()[files1[i]][1] / 100
+    
+    # vars()[files1[i]+'T'] = F.DYThorLabs(F.Trim(vars()[files1[i]],xMin,xMax))
+    vars()[files1[i]+'T'] = F.Trim(vars()[files1[i]],xMin,xMax)
+
+    vars()['yP'+files1[i]] = np.interp(xP,vars()[files1[i]+'T'][0],vars()[files1[i]+'T'][1])
+
+    vars()['nS'+files1[i]] = F.Sub_nFinder(vars()['yP'+files1[i]])
+    
+    if GaN == True:
+        vars()[f"MaxValSubT_{i}"] = max(vars()['yP'+files1[i]])
+    else:
+        pass
+    
+    # xP2 = xP/1000
+    
+    # vars()['nS'+files1[i]] = np.sqrt((1 + ((A1*(xP2**2) / ((xP2**2) - (B1**2))) + ((A2*(xP2**2)) / ((xP2**2) - (B2**2))) + ((A3*(xP2**2)) / ((xP2**2) - (B3**2))))))
+
+if GaN == True:    
+    for i in range(len(files)):
+        
+        k = vars()[f"MaxValSubT_{0}"] / max(vars()['yFiltered'+str(i)])
+        
+        vars()['yFiltered'+str(i)] = k * vars()['yFiltered'+str(i)]
+        
+        
+
+else:
+    pass
+
+
+if EnableCorrection == True:    
+    for i in range(len(files)):
+        
+        MaxLocOriginal = np.where(vars()['yFiltered'+str(i)] == max(vars()['yFiltered'+str(i)]))[0][0]
+        
+        Val = vars()[files[0]+'T'][0][MaxLocOriginal]
+        
+        MaxLocSub = np.where(xP == F.FindNearestVal(xP,Val))[0][0]
+        
+        SubValue = vars()['yP'+files1[0]][MaxLocSub]
+        
+        CorrectiveMultiplier = vars()['yP'+files1[0]][MaxLocSub] / vars()['yFiltered'+str(i)][MaxLocOriginal]
+        
+        vars()['yFiltered'+str(i)] =  vars()['yFiltered'+str(i)] * CorrectiveMultiplier
+
+else:
+    pass
+
+for i in range(len(files)):            
     vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)],vars()['MinY'+str(i)] = F.FindAntiNode(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)])
     
     
@@ -151,63 +220,24 @@ for i in range(len(files)):
 
     # vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)]
     # vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)]
-               
-    #Put case statment here in python 3.10
-    if i == 0:
-        #All the xValues are the same, only need to do this once
-        xP = np.linspace(min(vars()[files[i]+'T'][0]),max(vars()[files[i]+'T'][0]),10001)
-    else:
-        pass
-
-    vars()['yPMaxUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],False)
-    vars()['yPMinUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMinUnCorr'+str(i)],True)
-
-    vars()['yPMax'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
-    vars()['yPMin'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
 
 
-for i in range(len(files1)):
-    files1[i] = files1[i].rstrip(".txt")
-    
-    vars()[files1[i]] = np.loadtxt(open(path1 + "\\" + files1[i] + ".txt", "rb"), delimiter=",",skiprows = 2).T
-    
-    #This can be commented out with an alternet approach
-    vars()[files1[i]][0] = vars()[files1[i]][0]
-    
-    vars()[files1[i]][1] = vars()[files1[i]][1] / 100
-    
-    # vars()[files1[i]+'T'] = F.DYThorLabs(F.Trim(vars()[files1[i]],xMin,xMax))
-    vars()[files1[i]+'T'] = F.Trim(vars()[files1[i]],xMin,xMax)
+    vars()['yPMaxUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],0.6)
+    vars()['yPMinUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMinUnCorr'+str(i)],0.6)
 
-    vars()['yP'+files1[i]] = np.interp(xP,vars()[files1[i]+'T'][0],vars()[files1[i]+'T'][1])
+    # vars()['yPMaxUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],False)
+    # vars()['yPMinUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMaxUnCorr'+str(i)],True)
 
-    vars()['nS'+files1[i]] = F.Sub_nFinder(vars()['yP'+files1[i]])
-    
-    if GaN == True:
-        vars()[f"MaxValSubT_{i}"] = max(vars()['yP'+files1[i]])
-    else:
-        pass
-    
-    # xP2 = xP/1000
-    
-    # vars()['nS'+files1[i]] = np.sqrt((1 + ((A1*(xP2**2) / ((xP2**2) - (B1**2))) + ((A2*(xP2**2)) / ((xP2**2) - (B2**2))) + ((A3*(xP2**2)) / ((xP2**2) - (B3**2))))))
+    # vars()['yPMax'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
+    # vars()['yPMin'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
 
-if GaN == True:    
-    for i in range(len(files)):
-        
-        k = vars()[f"MaxValSubT_{0}"] / max(vars()['yFiltered'+str(i)])
-        
-        vars()['yFiltered'+str(i)] = k * vars()['yFiltered'+str(i)]
-        vars()['yPMaxUnCorr'+str(i)] = k * vars()['yPMaxUnCorr'+str(i)]
-        vars()['yPMinUnCorr'+str(i)] = k * vars()['yPMinUnCorr'+str(i)]
-        vars()['yNewMaxUnCorr'+str(i)] = k * vars()['yNewMaxUnCorr'+str(i)]
-        vars()['yNewMinUnCorr'+str(i)] =  k * vars()['yNewMinUnCorr'+str(i)]
-else:
-    pass
-    
+
+    vars()['yPMax'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],0.6)
+    vars()['yPMin'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],0.6)
+
 for i in range(len(files)):
     # plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
-    plt.figure(i)
+    plt.figure(i,figsize = (16,10),dpi = 600)
     plt.minorticks_on()
     plt.grid(which='major', color='k', linestyle='-')
     plt.grid(which='minor', color='darkgray', linestyle='--')

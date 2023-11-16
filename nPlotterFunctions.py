@@ -18,7 +18,7 @@ def fileGrabberTrans(scriptName,filePath,suffix):
     
     if len(fileNames) == 0:
         
-        header = 'No Date'
+        header = 'No Data'
         data = 0
         files = fileNames
     
@@ -68,62 +68,19 @@ def fileGrabberTrans(scriptName,filePath,suffix):
     return path,dirs,files,data,header
                     
         
-def fileGrabberTrans(scriptName,filePath,suffix):
+def datGrabber(datName,filepath):
+    data = np.loadtxt(filepath + datName + '.dat')
+    data = data.T
     
-    path, dirs, fileNames = next(os.walk(os.path.dirname(os.path.realpath(scriptName)) + filePath))
-    
-    if len(fileNames) == 0:
-        
-        header = 'No Date'
-        data = 0
-        files = fileNames
-    
+    if len(data) == 10:
+        header = ['x','y','rho','active','peak','peak convolution','x-correction','residuals','absolute residuals','weigthed residuals']
     else:
-    
-        files = []
-        
-        for i in range(len(fileNames)):
-            files.append(fileNames[i][:-len(suffix)])
+        diff = len(data) - 10
+        header = ['x','y','rho','active','peak 1','peak convolution','x-correction','residuals','absolute residuals','weigthed residuals',diff + 1]
+        for i in range(diff):
+            header.insert(i+5,f'peak {i+2}')
             
-        for i in range(len(files)):    
-            rows = []
-        
-            with open(str(path)+"\\"+files[i]+ suffix,'r', encoding='utf-8-sig', newline='') as f:
-                csvreader = csv.reader(f)
-                header = next(csvreader)
-            
-                for row in csvreader:
-                    rows.append(row)
-            
-            vars()[files[i]+'_Data_'+path[-1]] = rows
-            
-            for j in range(len(vars()[files[i]+'_Data_'+path[-1]])):
-                for k in range(len(vars()[files[i]+'_Data_'+path[-1]][j])):
-                    try:
-                        vars()[files[i]+'_Data_'+path[-1]][j][k] = float(vars()[files[i]+'_Data_'+path[-1]][j][k])
-                    except ValueError:
-                        pass
-        
-        
-        for i in range(len(files)): 
-            MaxLim = len(vars()[files[i]+'_Data_'+path[-1]])
-            j = 0
-            while j < MaxLim:
-                if vars()[files[i]+'_Data_'+path[-1]][j][18] == 'yes':
-                    vars()[files[i]+'_Data_'+path[-1]].pop(j)
-                    MaxLim = len(vars()[files[i]+'_Data_'+path[-1]])
-                else:
-                    j +=1
-            
-        data = []
-        for i in range(len(files)):
-            data.append(vars()[files[i]+'_Data_'+path[-1]])
-                    
-    
-    
-    return path,dirs,files,data,header
-
-
+    return header,data
 
 def fileGrabber(scriptName,filePath,suffix):
     
@@ -131,7 +88,7 @@ def fileGrabber(scriptName,filePath,suffix):
     
     if len(fileNames) == 0:
         
-        header = 'No Date'
+        header = 'No Data'
         data = 0
         files = fileNames
     
