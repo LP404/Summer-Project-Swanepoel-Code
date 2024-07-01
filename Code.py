@@ -23,9 +23,11 @@ xMax = 800
 EnableMultiplier = 2
 
 #Disable multiplier before using
-EnableCorrectionForTesting = True
+EnableCorrection = True
 
-GaNenable = False
+EnableMultiplier = 3
+
+GaN = False
 
 #Semillier for Sapphire
 # A1 = 1.4313493
@@ -56,8 +58,9 @@ else:
 
 
 #The next three loops remove the .txt from the files strings, this is for a cleaner title for the graph
+suffix = ".txt"
 for i in range(len(files)):
-    files[i] = files[i][:-4]
+    files[i] = files[i][:-len(suffix)]  
     
     vars()[files[i]] = np.loadtxt(open(path + "\\" + files[i] + ".txt", "rb"), delimiter=",",skiprows = 2).T
     vars()[files[i]][1] = vars()[files[i]][1] / 100
@@ -72,7 +75,6 @@ for i in range(len(files)):
     vars()['yFiltered'+str(i)] = F.NoiseFilter(3,0.2,vars()[files[i]+'T'][1])
     
     
-    
     if i == 0:
         #All the xValues are the same, only need to do this once
         xP = np.linspace(min(vars()[files[i]+'T'][0]),max(vars()[files[i]+'T'][0]),10001)
@@ -80,7 +82,7 @@ for i in range(len(files)):
         pass
 
 for i in range(len(files1)):
-    files1[i] = files1[i][:-4]
+    files1[i] = files1[i].rstrip(".txt")
     
     vars()[files1[i]] = np.loadtxt(open(path1 + "\\" + files1[i] + ".txt", "rb"), delimiter=",",skiprows = 2).T
     
@@ -94,11 +96,9 @@ for i in range(len(files1)):
 
     vars()['yP'+files1[i]] = np.interp(xP,vars()[files1[i]+'T'][0],vars()[files1[i]+'T'][1])
 
-    Ts = vars()['yP'+files1[i]]
-
     vars()['nS'+files1[i]] = F.Sub_nFinder(vars()['yP'+files1[i]])
     
-    if GaNenable == True:
+    if GaN == True:
         vars()[f"MaxValSubT_{i}"] = max(vars()['yP'+files1[i]])
     else:
         pass
@@ -107,498 +107,467 @@ for i in range(len(files1)):
     
     # vars()['nS'+files1[i]] = np.sqrt((1 + ((A1*(xP2**2) / ((xP2**2) - (B1**2))) + ((A2*(xP2**2)) / ((xP2**2) - (B2**2))) + ((A3*(xP2**2)) / ((xP2**2) - (B3**2))))))
 
-
-for i in range(len(files1)):
-    header = ['λ (nm)','Ts']
-    with open('CSVout/Absorption/'+files1[i]+ '_SubTran.csv','w', encoding='utf-8-sig', newline='') as f:
-         
-        writer = csv.writer(f)
-        writer.writerow(header)
+if GaN == True:    
+    for i in range(len(files)):
         
-        for l in range(len(Ts)):
-            data = [xP[l],Ts[l]]
-            writer.writerow(data)
-
-
-
-
-# if GaNenable == True:    
-#     for i in range(len(files)):
+        k = vars()[f"MaxValSubT_{0}"] / max(vars()['yFiltered'+str(i)])
         
-#         k = vars()[f"MaxValSubT_{0}"] / max(vars()['yFiltered'+str(i)])
-        
-#         vars()['yFiltered'+str(i)] = k * vars()['yFiltered'+str(i)]
+        vars()['yFiltered'+str(i)] = k * vars()['yFiltered'+str(i)]
         
         
 
-# else:
-#     pass
+else:
+    pass
 
 
-# if EnableCorrectionForTesting  == True:    
-#     for i in range(len(files)):
+if EnableCorrection == True:    
+    for i in range(len(files)):
         
-#         MaxLocOriginal = np.where(vars()['yFiltered'+str(i)] == max(vars()['yFiltered'+str(i)]))[0][0]
+        MaxLocOriginal = np.where(vars()['yFiltered'+str(i)] == max(vars()['yFiltered'+str(i)]))[0][0]
         
-#         Val = vars()[files[0]+'T'][0][MaxLocOriginal]
+        Val = vars()[files[0]+'T'][0][MaxLocOriginal]
         
-#         MaxLocSub = np.where(xP == F.FindNearestVal(xP,Val))[0][0]
+        MaxLocSub = np.where(xP == F.FindNearestVal(xP,Val))[0][0]
         
-#         SubValue = vars()['yP'+files1[0]][MaxLocSub]
+        SubValue = vars()['yP'+files1[0]][MaxLocSub]
         
-#         CorrectiveMultiplier = vars()['yP'+files1[0]][MaxLocSub] / vars()['yFiltered'+str(i)][MaxLocOriginal]
+        CorrectiveMultiplier = vars()['yP'+files1[0]][MaxLocSub] / vars()['yFiltered'+str(i)][MaxLocOriginal]
         
-#         vars()['yFiltered'+str(i)] =  vars()['yFiltered'+str(i)] * CorrectiveMultiplier
+        vars()['yFiltered'+str(i)] =  vars()['yFiltered'+str(i)] * CorrectiveMultiplier
 
-# else:
-#     pass
+else:
+    pass
 
-# for i in range(len(files)):            
-#     vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)],vars()['MinY'+str(i)] = F.FindAntiNode(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)])
+for i in range(len(files)):            
+    vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)],vars()['MinY'+str(i)] = F.FindAntiNode(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)])
     
     
-#     #0.075 is standard value for the second variable in the function. but adjust as neccessary
-#     vars()['xNewMax'+str(i)], vars()['yNewMaxUnCorr'+str(i)],vars()['xNewMin'+str(i)], vars()['yNewMinUnCorr'+str(i)] = F.BackNodeFix(3,0.075,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)],vars()['MinY'+str(i)])
+    #0.075 is standard value for the second variable in the function. but adjust as neccessary
+    vars()['xNewMax'+str(i)], vars()['yNewMaxUnCorr'+str(i)],vars()['xNewMin'+str(i)], vars()['yNewMinUnCorr'+str(i)] = F.BackNodeFix(3,0.075,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], vars()['MinX'+str(i)],vars()['MinY'+str(i)])
     
     
-#     vars()['MaxW'+str(i)] = np.array([])
-#     vars()['MinW'+str(i)] = np.array([])
+    vars()['MaxW'+str(i)] = np.array([])
+    vars()['MinW'+str(i)] = np.array([])
     
 
-#     if (max(vars()['xNewMax'+str(i)]) > max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) < min(vars()['xNewMin'+str(i)])):
-#         for k in range(len(vars()['xNewMin'+str(i)])):
-#             if k == 0:
-#                 W = 2 * (min(vars()['xNewMin'+str(i)]) - min(vars()['xNewMax'+str(i)]))
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
-#             else:
-#                 W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)
+    if (max(vars()['xNewMax'+str(i)]) > max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) < min(vars()['xNewMin'+str(i)])):
+        for k in range(len(vars()['xNewMin'+str(i)])):
+            if k == 0:
+                W = 2 * (min(vars()['xNewMin'+str(i)]) - min(vars()['xNewMax'+str(i)]))
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
+            else:
+                W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)
     
-#         W = 2 * (max(vars()['xNewMax'+str(i)]) - max(vars()['xNewMin'+str(i)]))   
-#         vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)
+        W = 2 * (max(vars()['xNewMax'+str(i)]) - max(vars()['xNewMin'+str(i)]))   
+        vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)
         
-#         for j in range(1,len(vars()['xNewMax'+str(i)])):
-#                 w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w) 
+        for j in range(1,len(vars()['xNewMax'+str(i)])):
+                w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w) 
                 
-#     elif (max(vars()['xNewMax'+str(i)]) < max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) < min(vars()['xNewMin'+str(i)])):
-#         for k in range(len(vars()['xNewMin'+str(i)])):
-#             if k == 0:
-#                 W = 2 * (min(vars()['xNewMin'+str(i)]) - min(vars()['xNewMax'+str(i)]))
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
-#             else:
-#                 W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)      
+    elif (max(vars()['xNewMax'+str(i)]) < max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) < min(vars()['xNewMin'+str(i)])):
+        for k in range(len(vars()['xNewMin'+str(i)])):
+            if k == 0:
+                W = 2 * (min(vars()['xNewMin'+str(i)]) - min(vars()['xNewMax'+str(i)]))
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
+            else:
+                W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)      
                 
-#         for j in range(1,len(vars()['xNewMax'+str(i)])):
-#             if j == (len(vars()['xNewMax'+str(i)]) - 1):        
-#                 w = 2 * (max(vars()['xNewMin'+str(i)]) - max(vars()['xNewMax'+str(i)]))
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
+        for j in range(1,len(vars()['xNewMax'+str(i)])):
+            if j == (len(vars()['xNewMax'+str(i)]) - 1):        
+                w = 2 * (max(vars()['xNewMin'+str(i)]) - max(vars()['xNewMax'+str(i)]))
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
                 
-#     elif (max(vars()['xNewMax'+str(i)]) > max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) > min(vars()['xNewMin'+str(i)])):
-#         for k in range(1,len(vars()['xNewMin'+str(i)])):
-#             if k == (len(vars()['xNewMin'+str(i)]) - 1):
-#                 W = 2 * (max(vars()['xNewMax'+str(i)]) - max(vars()['xNewMin'+str(i)]))
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)              
-#             else:
-#                 W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
+    elif (max(vars()['xNewMax'+str(i)]) > max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) > min(vars()['xNewMin'+str(i)])):
+        for k in range(1,len(vars()['xNewMin'+str(i)])):
+            if k == (len(vars()['xNewMin'+str(i)]) - 1):
+                W = 2 * (max(vars()['xNewMax'+str(i)]) - max(vars()['xNewMin'+str(i)]))
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)              
+            else:
+                W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
         
-#         for j in range(1,len(vars()['xNewMax'+str(i)])):
-#             if j == (len(vars()['xNewMax'+str(i)]) - 1):
-#                 w = 2 * (min(vars()['xNewMax'+str(i)]) - min(vars()['xNewMin'+str(i)]))
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)   
-#             else:
-#                 w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
+        for j in range(1,len(vars()['xNewMax'+str(i)])):
+            if j == (len(vars()['xNewMax'+str(i)]) - 1):
+                w = 2 * (min(vars()['xNewMax'+str(i)]) - min(vars()['xNewMin'+str(i)]))
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)   
+            else:
+                w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
     
-#     elif (max(vars()['xNewMax'+str(i)]) < max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) > min(vars()['xNewMin'+str(i)])):
-#         for k in range(1,len(vars()['xNewMin'+str(i)])):
-#                 W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
-#                 vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
+    elif (max(vars()['xNewMax'+str(i)]) < max(vars()['xNewMin'+str(i)])) and (min(vars()['xNewMax'+str(i)]) > min(vars()['xNewMin'+str(i)])):
+        for k in range(1,len(vars()['xNewMin'+str(i)])):
+                W = vars()['xNewMin'+str(i)][k] - vars()['xNewMin'+str(i)][k-1]
+                vars()['MaxW'+str(i)] = np.append(vars()['MaxW'+str(i)],W)           
         
-#         for j in range(len(vars()['xNewMax'+str(i)])):
-#             if j == 0:
-#                 w = 2 * (min(vars()['xNewMax'+str(i)]) - min(vars()['xNewMin'+str(i)]))
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)   
-#             else:
-#                 w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
-#                 vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w) 
+        for j in range(len(vars()['xNewMax'+str(i)])):
+            if j == 0:
+                w = 2 * (min(vars()['xNewMax'+str(i)]) - min(vars()['xNewMin'+str(i)]))
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)   
+            else:
+                w = vars()['xNewMax'+str(i)][j] - vars()['xNewMax'+str(i)][j-1]
+                vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w) 
             
-#         w = 2 * (max(vars()['xNewMin'+str(i)]) - max(vars()['xNewMax'+str(i)]))   
-#         vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
+        w = 2 * (max(vars()['xNewMin'+str(i)]) - max(vars()['xNewMax'+str(i)]))   
+        vars()['MinW'+str(i)] = np.append(vars()['MinW'+str(i)],w)
         
-    
-#     vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)] + ((Slitwidth*vars()['yNewMaxUnCorr'+str(i)])/vars()['MaxW'+str(i)])**2
-#     vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)] + ((Slitwidth*vars()['yNewMinUnCorr'+str(i)])/vars()['MinW'+str(i)])**2
+        
+    vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)] + ((Slitwidth*vars()['yNewMaxUnCorr'+str(i)])/vars()['MaxW'+str(i)])**2
+    vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)] + ((Slitwidth*vars()['yNewMinUnCorr'+str(i)])/vars()['MinW'+str(i)])**2
  
 
-#     # vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)]
-#     # vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)]
+    # vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)]
+    # vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)]
 
 
-#     # np.savetxt('xP.txt', xP, delimiter=",")
-#     # np.savetxt('x.txt', vars()[files[i]+'T'][0], delimiter=",")
-#     # np.savetxt('y.txt',vars()['yFiltered'+str(i)], delimiter=",")
-#     # np.savetxt('AntiX.txt',vars()['xNewMax'+str(i)], delimiter=",")
-#     # np.savetxt('AntiY.txt',vars()['yNewMaxUnCorr'+str(i)], delimiter=",")
+    vars()['yPMaxUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],0.6)
+    vars()['yPMinUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMinUnCorr'+str(i)],0.6)
+
+    # vars()['yPMaxUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],False)
+    # vars()['yPMinUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMaxUnCorr'+str(i)],True)
+
+    # vars()['yPMax'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
+    # vars()['yPMin'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
 
 
-#     # vars()['yPMaxUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],False)
-#     # vars()['yPMinUnCorr'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMaxUnCorr'+str(i)],True)
+    vars()['yPMax'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],0.6)
+    vars()['yPMin'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],0.6)
 
-#     # vars()['yPMax'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
-#     # vars()['yPMin'+str(i)]  = F.FancyInterpolate(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
-
-#     vars()['yPMaxUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)])
-#     vars()['yPMinUnCorr'+str(i)]  = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMinUnCorr'+str(i)])
-
-#     vars()['yPMax'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)])
-#     vars()['yPMin'+str(i)] = F.Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)])
-
-
-#     # vars()['yPMaxUnCorr'+str(i)]  = F.ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMaxUnCorr'+str(i)],False)
-#     # vars()['yPMinUnCorr'+str(i)]  = F.ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMinUnCorr'+str(i)],True)
-
-#     # vars()['yPMax'+str(i)] = F.ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
-#     # vars()['yPMin'+str(i)] = F.ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
-
-
-
-
-# for i in range(len(files)):
-#     # plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
-#     plt.figure(i,figsize = (16,10),dpi = 600)
-#     plt.minorticks_on()
-#     plt.grid(which='major', color='k', linestyle='-')
-#     plt.grid(which='minor', color='darkgray', linestyle='--')
-#     plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
-#     plt.title(files[i])
-#     plt.xlabel("Wavelength (nm)")
-#     plt.ylabel("Transmission/Absorbance")
+for i in range(len(files)):
+    # plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
+    plt.figure(i,figsize = (16,10),dpi = 600)
+    plt.minorticks_on()
+    plt.grid(which='major', color='k', linestyle='-')
+    plt.grid(which='minor', color='darkgray', linestyle='--')
+    plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
+    plt.title(files[i])
+    plt.xlabel("Wavelength (nm)")
+    plt.ylabel("Transmission/Absorbance")
     
-#     # np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
+    # np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
 
 
-#     plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMaxUnCorr'+str(i)], color = 'black', marker = "x", label = "Maxima")
-#     plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMinUnCorr'+str(i)], color = 'red', marker = "x", label = "Minima")
-#     plt.plot(xP,vars()['yPMaxUnCorr'+str(i)], color = 'black', linestyle="dotted", label = "TM")
-#     plt.plot(xP,vars()['yPMinUnCorr'+str(i)], color = 'red', linestyle="dotted", label = "Tm")
-#     plt.plot(xP,vars()['yP'+files1[0]], color = 'orange', label = "Substrate")
+    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMaxUnCorr'+str(i)], color = 'black', marker = "x", label = "Maxima")
+    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMinUnCorr'+str(i)], color = 'red', marker = "x", label = "Minima")
+    plt.plot(xP,vars()['yPMaxUnCorr'+str(i)], color = 'black', linestyle="dotted", label = "TM")
+    plt.plot(xP,vars()['yPMinUnCorr'+str(i)], color = 'red', linestyle="dotted", label = "Tm")
+    plt.plot(xP,vars()['yP'+files1[0]], color = 'orange', label = "Substrate")
     
-#     plt.legend()
+    plt.legend()
     
-# for i in range(len(files)):
+for i in range(len(files)):
     
 
-#     vars()['TmForMax'+str(i)] = np.array([])
-#     vars()['TMForMin'+str(i)] = np.array([])
+    vars()['TmForMax'+str(i)] = np.array([])
+    vars()['TMForMin'+str(i)] = np.array([])
         
-#     vars()['dForMax'+str(i)] = np.array([])
-#     vars()['dForMin'+str(i)] = np.array([])
+    vars()['dForMax'+str(i)] = np.array([])
+    vars()['dForMin'+str(i)] = np.array([])
     
-#     vars()['nForMax'+str(i)] = np.array([])
-#     vars()['nForMin'+str(i)] = np.array([])
+    vars()['nForMax'+str(i)] = np.array([])
+    vars()['nForMin'+str(i)] = np.array([])
     
-#     vars()['mForMax'+str(i)] = np.array([])
-#     vars()['mForMin'+str(i)] = np.array([])
+    vars()['mForMax'+str(i)] = np.array([])
+    vars()['mForMin'+str(i)] = np.array([])
     
-#     vars()['New_dForMax'+str(i)] = np.array([])
-#     vars()['New_dForMin'+str(i)] = np.array([])
+    vars()['New_dForMax'+str(i)] = np.array([])
+    vars()['New_dForMin'+str(i)] = np.array([])
     
-#     vars()['New_nForMax'+str(i)] = np.array([])
-#     vars()['New_nForMin'+str(i)] = np.array([])
+    vars()['New_nForMax'+str(i)] = np.array([])
+    vars()['New_nForMin'+str(i)] = np.array([])
 
-#     vars()['TmForMaxUnCorr'+str(i)] = np.array([])
-#     vars()['TMForMinUnCorr'+str(i)] = np.array([])
+    vars()['TmForMaxUnCorr'+str(i)] = np.array([])
+    vars()['TMForMinUnCorr'+str(i)] = np.array([])
     
-#     vars()['n1UncertMax'+str(i)] = np.array([])
-#     vars()['n1UncertMin'+str(i)] = np.array([])
+    vars()['n1UncertMax'+str(i)] = np.array([])
+    vars()['n1UncertMin'+str(i)] = np.array([])
     
-#     vars()['d1UncertMax'+str(i)] = np.array([])
-#     vars()['d1UncertMin'+str(i)] = np.array([]) #f'file_{i}'
+    vars()['d1UncertMax'+str(i)] = np.array([])
+    vars()['d1UncertMin'+str(i)] = np.array([]) #f'file_{i}'
        
     
-#     #Finds values that do not account for slit width correction
-#     #These values are not used for any calcultions beyond finding corrected values
+    #Finds values that do not account for slit width correction
+    #These values are not used for any calcultions beyond finding corrected values
     
-#     #dUncert(Lam1,Lam2,n1,n2,d,LamUncert,n1Uncert,n2Uncert)
-#     #nUncertFinder(TUncert,TM,Tm,n)
+    #dUncert(Lam1,Lam2,n1,n2,d,LamUncert,n1Uncert,n2Uncert)
+    #nUncertFinder(TUncert,TM,Tm,n)
     
-#     for k in range(len(vars()['xNewMax'+str(i)])):
+    for k in range(len(vars()['xNewMax'+str(i)])):
     
         
-#         Loc = np.where(xP == F.FindNearestVal(xP,vars()['xNewMax'+str(i)][k]))[0][0]
-#         Opp = vars()['yPMinUnCorr'+str(i)][Loc]   
-#         vars()['TmForMaxUnCorr'+str(i)] = np.append(vars()['TmForMaxUnCorr'+str(i)],Opp)
+        Loc = np.where(xP == F.FindNearestVal(xP,vars()['xNewMax'+str(i)][k]))[0][0]
+        Opp = vars()['yPMinUnCorr'+str(i)][Loc]   
+        vars()['TmForMaxUnCorr'+str(i)] = np.append(vars()['TmForMaxUnCorr'+str(i)],Opp)
 
-#     for j in range(len(vars()['xNewMin'+str(i)])):
+    for j in range(len(vars()['xNewMin'+str(i)])):
         
         
-#         Loc1 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMin'+str(i)][j]))[0][0]
-#         Opp1 = vars()['yPMaxUnCorr'+str(i)][Loc1]   
-#         vars()['TMForMinUnCorr'+str(i)] = np.append(vars()['TMForMinUnCorr'+str(i)],Opp1)
+        Loc1 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMin'+str(i)][j]))[0][0]
+        Opp1 = vars()['yPMaxUnCorr'+str(i)][Loc1]   
+        vars()['TMForMinUnCorr'+str(i)] = np.append(vars()['TMForMinUnCorr'+str(i)],Opp1)
         
         
-#     TMcombiUnCorr = np.append(vars()['yNewMaxUnCorr'+str(i)],vars()['TMForMinUnCorr'+str(i)])
-#     TmCombiUnCorr = np.append(vars()['TmForMaxUnCorr'+str(i)],vars()['yNewMinUnCorr'+str(i)])
+    TMcombiUnCorr = np.append(vars()['yNewMaxUnCorr'+str(i)],vars()['TMForMinUnCorr'+str(i)])
+    TmCombiUnCorr = np.append(vars()['TmForMaxUnCorr'+str(i)],vars()['yNewMinUnCorr'+str(i)])
     
         
-#     for k in range(len(vars()['xNewMax'+str(i)])):
+    for k in range(len(vars()['xNewMax'+str(i)])):
     
         
-#         Loc2 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMax'+str(i)][k]))[0][0]
-#         Opp2 = vars()['yPMin'+str(i)][Loc2]   
-#         vars()['TmForMax'+str(i)] = np.append(vars()['TmForMax'+str(i)],Opp2)
-#         Sub = vars()['nS'+files1[0]][Loc2]
+        Loc2 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMax'+str(i)][k]))[0][0]
+        Opp2 = vars()['yPMin'+str(i)][Loc2]   
+        vars()['TmForMax'+str(i)] = np.append(vars()['TmForMax'+str(i)],Opp2)
+        Sub = vars()['nS'+files1[0]][Loc2]
                 
-#         n = F.nFinder(vars()['yNewMax'+str(i)][k],Opp2,vars()['xNewMax'+str(i)][k],Sub)
+        n = F.nFinder(vars()['yNewMax'+str(i)][k],Opp2,vars()['xNewMax'+str(i)][k],Sub)
  
-#         vars()['nForMax'+str(i)] = np.append(vars()['nForMax'+str(i)],n)
+        vars()['nForMax'+str(i)] = np.append(vars()['nForMax'+str(i)],n)
 
-#         nError = F.nUncertFinder(TU,vars()['xNewMax'+str(i)][k],Opp2,n)
+        nError = F.nUncertFinder(TU,vars()['xNewMax'+str(i)][k],Opp2,n)
         
-#         vars()['n1UncertMax'+str(i)] = np.append(vars()['n1UncertMax'+str(i)],nError)
+        vars()['n1UncertMax'+str(i)] = np.append(vars()['n1UncertMax'+str(i)],nError)
 
-#     for k in range(1,len(vars()['xNewMax'+str(i)])):
+    for k in range(1,len(vars()['xNewMax'+str(i)])):
         
-#         d = F.dFinder(vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],1)
+        d = F.dFinder(vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],1)
     
-#         vars()['dForMax'+str(i)] = np.append(vars()['dForMax'+str(i)],abs(d))    
+        vars()['dForMax'+str(i)] = np.append(vars()['dForMax'+str(i)],abs(d))    
     
-#         #dErr = F.dUncert(vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],d,DeltaLam,vars()['n1UncertMax'+str(i)][k-1],vars()['n1UncertMax'+str(i)][k])
+        #dErr = F.dUncert(vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],d,DeltaLam,vars()['n1UncertMax'+str(i)][k-1],vars()['n1UncertMax'+str(i)][k])
    
-#         dErr = F.dUncerIgnN(vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],d,DeltaLam)
+        dErr = F.dUncerIgnN(vars()['xNewMax'+str(i)][k-1],vars()['xNewMax'+str(i)][k],vars()['nForMax'+str(i)][k-1],vars()['nForMax'+str(i)][k],d,DeltaLam)
     
-#         vars()['d1UncertMax'+str(i)] = np.append(vars()['d1UncertMax'+str(i)],dErr)
+        vars()['d1UncertMax'+str(i)] = np.append(vars()['d1UncertMax'+str(i)],dErr)
    
     
-#     dFin = F.dFinder(vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],len(vars()['xNewMax'+str(i)]-1))
-#     vars()['dForMax'+str(i)] = np.append(vars()['dForMax'+str(i)],abs(dFin))
+    dFin = F.dFinder(vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],len(vars()['xNewMax'+str(i)]-1))
+    vars()['dForMax'+str(i)] = np.append(vars()['dForMax'+str(i)],abs(dFin))
         
-#     #dErrFin = F.dUncert(vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],dFin,DeltaLam,vars()['n1UncertMax'+str(i)][0],vars()['n1UncertMax'+str(i)][len(vars()['n1UncertMax'+str(i)])-1])
+    #dErrFin = F.dUncert(vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],dFin,DeltaLam,vars()['n1UncertMax'+str(i)][0],vars()['n1UncertMax'+str(i)][len(vars()['n1UncertMax'+str(i)])-1])
 
-#     dErrFin = F.dUncerIgnN(vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],dFin,DeltaLam)
+    dErrFin = F.dUncerIgnN(vars()['xNewMax'+str(i)][0],vars()['xNewMax'+str(i)][len(vars()['xNewMax'+str(i)])-1],vars()['nForMax'+str(i)][0],vars()['nForMax'+str(i)][len(vars()['nForMax'+str(i)])-1],dFin,DeltaLam)
 
-#     vars()['d1UncertMax'+str(i)] = np.append(vars()['d1UncertMax'+str(i)],dErrFin)
+    vars()['d1UncertMax'+str(i)] = np.append(vars()['d1UncertMax'+str(i)],dErrFin)
     
     
-#     for j in range(len(vars()['xNewMin'+str(i)])):
+    for j in range(len(vars()['xNewMin'+str(i)])):
         
         
-#         Loc3 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMin'+str(i)][j]))[0][0]
-#         Opp3 = vars()['yPMax'+str(i)][Loc3]   
-#         vars()['TMForMin'+str(i)] = np.append(vars()['TMForMin'+str(i)],Opp3)
-#         Sub1 = vars()['nS'+files1[0]][Loc3]
+        Loc3 = np.where(xP == F.FindNearestVal(xP,vars()['xNewMin'+str(i)][j]))[0][0]
+        Opp3 = vars()['yPMax'+str(i)][Loc3]   
+        vars()['TMForMin'+str(i)] = np.append(vars()['TMForMin'+str(i)],Opp3)
+        Sub1 = vars()['nS'+files1[0]][Loc3]
                 
-#         n1 = F.nFinder(Opp3,vars()['yNewMin'+str(i)][j],vars()['xNewMin'+str(i)][j],Sub1)    
+        n1 = F.nFinder(Opp3,vars()['yNewMin'+str(i)][j],vars()['xNewMin'+str(i)][j],Sub1)    
   
-#         vars()['nForMin'+str(i)] = np.append(vars()['nForMin'+str(i)],n1)
+        vars()['nForMin'+str(i)] = np.append(vars()['nForMin'+str(i)],n1)
   
-#         n1Error = F.nUncertFinder(TU,Opp3,vars()['xNewMin'+str(i)][j],n1)
+        n1Error = F.nUncertFinder(TU,Opp3,vars()['xNewMin'+str(i)][j],n1)
 
-#         vars()['n1UncertMin'+str(i)] = np.append(vars()['n1UncertMin'+str(i)],n1Error)
+        vars()['n1UncertMin'+str(i)] = np.append(vars()['n1UncertMin'+str(i)],n1Error)
     
-#     n1Combi = np.append(vars()['nForMax'+str(i)],vars()['nForMin'+str(i)])
-#     n1ErrCombi = np.append(vars()['n1UncertMax'+str(i)],vars()['n1UncertMin'+str(i)])
+    n1Combi = np.append(vars()['nForMax'+str(i)],vars()['nForMin'+str(i)])
+    n1ErrCombi = np.append(vars()['n1UncertMax'+str(i)],vars()['n1UncertMin'+str(i)])
     
-#     for j in range(1,len(vars()['xNewMin'+str(i)])):
+    for j in range(1,len(vars()['xNewMin'+str(i)])):
             
-#         d1 = F.dFinder(vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],1)
+        d1 = F.dFinder(vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],1)
     
-#         vars()['dForMin'+str(i)] = np.append(vars()['dForMin'+str(i)],abs(d1))
+        vars()['dForMin'+str(i)] = np.append(vars()['dForMin'+str(i)],abs(d1))
         
-#         #d1Err = F.dUncert(vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],d1,DeltaLam,vars()['n1UncertMin'+str(i)][j-1],vars()['n1UncertMin'+str(i)][j])
+        #d1Err = F.dUncert(vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],d1,DeltaLam,vars()['n1UncertMin'+str(i)][j-1],vars()['n1UncertMin'+str(i)][j])
         
-#         d1Err = F.dUncerIgnN(vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],d1,DeltaLam)
+        d1Err = F.dUncerIgnN(vars()['xNewMin'+str(i)][j-1],vars()['xNewMin'+str(i)][j],vars()['nForMin'+str(i)][j-1],vars()['nForMin'+str(i)][j],d1,DeltaLam)
         
-#         vars()['d1UncertMin'+str(i)] = np.append(vars()['d1UncertMin'+str(i)],d1Err)
+        vars()['d1UncertMin'+str(i)] = np.append(vars()['d1UncertMin'+str(i)],d1Err)
         
-#     dFin1 = F.dFinder(vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],len(vars()['xNewMin'+str(i)]-1))
-#     vars()['dForMin'+str(i)] = np.append(vars()['dForMin'+str(i)],abs(dFin1))    
+    dFin1 = F.dFinder(vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],len(vars()['xNewMin'+str(i)]-1))
+    vars()['dForMin'+str(i)] = np.append(vars()['dForMin'+str(i)],abs(dFin1))    
 
-#     #dErrFin1 = F.dUncert(vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],dFin1,DeltaLam,vars()['n1UncertMin'+str(i)][0],vars()['n1UncertMin'+str(i)][len(vars()['n1UncertMin'+str(i)])-1])
+    #dErrFin1 = F.dUncert(vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],dFin1,DeltaLam,vars()['n1UncertMin'+str(i)][0],vars()['n1UncertMin'+str(i)][len(vars()['n1UncertMin'+str(i)])-1])
     
-#     dErrFin1 = F.dUncerIgnN(vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],dFin1,DeltaLam)
+    dErrFin1 = F.dUncerIgnN(vars()['xNewMin'+str(i)][0],vars()['xNewMin'+str(i)][len(vars()['xNewMin'+str(i)])-1],vars()['nForMin'+str(i)][0],vars()['nForMin'+str(i)][len(vars()['nForMin'+str(i)])-1],dFin1,DeltaLam)
     
-#     vars()['d1UncertMin'+str(i)] = np.append(vars()['d1UncertMin'+str(i)],dErrFin1)
+    vars()['d1UncertMin'+str(i)] = np.append(vars()['d1UncertMin'+str(i)],dErrFin1)
 
     
-#     d1Combi = np.append(vars()['dForMax'+str(i)],vars()['dForMin'+str(i)])
-#     LambdaCombi = np.append(vars()['xNewMax'+str(i)],vars()['xNewMin'+str(i)])
-#     d1ErrCombi = np.append(vars()['d1UncertMax'+str(i)],vars()['d1UncertMin'+str(i)])
+    d1Combi = np.append(vars()['dForMax'+str(i)],vars()['dForMin'+str(i)])
+    LambdaCombi = np.append(vars()['xNewMax'+str(i)],vars()['xNewMin'+str(i)])
+    d1ErrCombi = np.append(vars()['d1UncertMax'+str(i)],vars()['d1UncertMin'+str(i)])
     
-#     d1Avg, d1StandardError, RejectedLambdas1, d1ExpError = F.ThicknessAcceptance(LambdaCombi,d1Combi,1,d1ErrCombi,2) 
-#     d1Error = np.sqrt((d1StandardError**2 + d1ExpError**2))
+    d1Avg, d1StandardError, RejectedLambdas1, d1ExpError = F.ThicknessAcceptance(LambdaCombi,d1Combi,1,d1ErrCombi,2) 
+    d1Error = np.sqrt((d1StandardError**2 + d1ExpError**2))
     
-#     for k in range(len(vars()['xNewMax'+str(i)])):
+    for k in range(len(vars()['xNewMax'+str(i)])):
 
-#         mCalc =  (2*vars()['nForMax'+str(i)][k]*d1Avg) / vars()['xNewMax'+str(i)][k]
-#         vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
+        mCalc =  (2*vars()['nForMax'+str(i)][k]*d1Avg) / vars()['xNewMax'+str(i)][k]
+        vars()['mForMax'+str(i)] = np.append(vars()['mForMax'+str(i)],np.around(mCalc,0))
     
         
-#         dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
-#         vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
+        dCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*vars()['nForMax'+str(i)][k])
+        vars()['New_dForMax'+str(i)] = np.append(vars()['New_dForMax'+str(i)],dCalc) 
     
 
-#     for j in range(len(vars()['xNewMin'+str(i)])):
-#         mCalc1 =  (2*vars()['nForMin'+str(i)][j]*d1Avg) / vars()['xNewMin'+str(i)][j]
-#         vars()['mForMin'+str(i)] = np.append(vars()['mForMin'+str(i)],F.round_off_rating(mCalc1))
+    for j in range(len(vars()['xNewMin'+str(i)])):
+        mCalc1 =  (2*vars()['nForMin'+str(i)][j]*d1Avg) / vars()['xNewMin'+str(i)][j]
+        vars()['mForMin'+str(i)] = np.append(vars()['mForMin'+str(i)],F.round_off_rating(mCalc1))
 
-#         dCalc = (vars()['mForMin'+str(i)][j] * vars()['xNewMin'+str(i)][j]) / (2*vars()['nForMin'+str(i)][j])
+        dCalc = (vars()['mForMin'+str(i)][j] * vars()['xNewMin'+str(i)][j]) / (2*vars()['nForMin'+str(i)][j])
         
-#         vars()['New_dForMin'+str(i)] = np.append(vars()['New_dForMin'+str(i)],dCalc)
+        vars()['New_dForMin'+str(i)] = np.append(vars()['New_dForMin'+str(i)],dCalc)
 
-#     d2Combi = np.append(vars()['New_dForMax'+str(i)],vars()['New_dForMin'+str(i)])
+    d2Combi = np.append(vars()['New_dForMax'+str(i)],vars()['New_dForMin'+str(i)])
     
-#     Per1 = F.AbsToPer(n1ErrCombi,n1Combi)
-#     Per2 = F.AbsToPer(d1ErrCombi,d1Combi)
+    Per1 = F.AbsToPer(n1ErrCombi,n1Combi)
+    Per2 = F.AbsToPer(d1ErrCombi,d1Combi)
     
-#     d2ErrCombi = np.array([])
+    d2ErrCombi = np.array([])
     
-#     for k in range(len(LambdaCombi)):
-#         if Per1[k] < Per2[k]:
-#             d2ErrCombi = np.append(d2ErrCombi,F.PerToAbs(Per2[k],d2Combi[k]))
-#         else:
-#             d2ErrCombi = np.append(d2ErrCombi,F.PerToAbs(Per1[k],d2Combi[k]))
+    for k in range(len(LambdaCombi)):
+        if Per1[k] < Per2[k]:
+            d2ErrCombi = np.append(d2ErrCombi,F.PerToAbs(Per2[k],d2Combi[k]))
+        else:
+            d2ErrCombi = np.append(d2ErrCombi,F.PerToAbs(Per1[k],d2Combi[k]))
     
     
-#     d2Avg, d2StandardError, RejectedLambdasD2, d2ExpError = F.ThicknessAcceptance(LambdaCombi,d2Combi, 0,d2ErrCombi,3) 
+    d2Avg, d2StandardError, RejectedLambdasD2, d2ExpError = F.ThicknessAcceptance(LambdaCombi,d2Combi, 0,d2ErrCombi,3) 
 
-#     d2Error = np.sqrt((d2StandardError**2 + d2ExpError**2))
+    d2Error = np.sqrt((d2StandardError**2 + d2ExpError**2))
     
-#     RejectedLambdasD2 = np.append(RejectedLambdasD2,RejectedLambdas1)
+    RejectedLambdasD2 = np.append(RejectedLambdasD2,RejectedLambdas1)
 
-#     for k in range(len(vars()['xNewMax'+str(i)])):
+    for k in range(len(vars()['xNewMax'+str(i)])):
         
-#         nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*d2Avg)
-#         #nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
-#         vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
+        nCalc = (vars()['mForMax'+str(i)][k] * vars()['xNewMax'+str(i)][k]) / (2*d2Avg)
+        #nCalc = (vars()['dForMax'+str(i)][k-1+l]*vars()['nForMax'+str(i)][k]) / (vars()['New_dForMax'+str(i)][k+l+HasLoopMax2])
+        vars()['New_nForMax'+str(i)] = np.append(vars()['New_nForMax'+str(i)],nCalc)
     
     
-#     for j in range(len(vars()['xNewMin'+str(i)])):
-#         nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*d2Avg)
-#         #  nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
-#         vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
+    for j in range(len(vars()['xNewMin'+str(i)])):
+        nCalc = (vars()['mForMin'+str(i)][j]*vars()['xNewMin'+str(i)][j]) / (2*d2Avg)
+        #  nCalc = (vars()['dForMin'+str(i)][j-1+o]*vars()['nForMin'+str(i)][j]) / (vars()['New_dForMin'+str(i)][j+o+HasLoopMin2])
+        vars()['New_nForMin'+str(i)] = np.append(vars()['New_nForMin'+str(i)],nCalc)
         
    
-#     TMcombi = np.append(vars()['yNewMax'+str(i)],vars()['TMForMin'+str(i)])
-#     TmCombi = np.append(vars()['TmForMax'+str(i)],vars()['yNewMin'+str(i)])
-#     mCombi = np.append(vars()['mForMax'+str(i)],vars()['mForMin'+str(i)])
-#     n2Combi = np.append(vars()['New_nForMax'+str(i)],vars()['New_nForMin'+str(i)])
+    TMcombi = np.append(vars()['yNewMax'+str(i)],vars()['TMForMin'+str(i)])
+    TmCombi = np.append(vars()['TmForMax'+str(i)],vars()['yNewMin'+str(i)])
+    mCombi = np.append(vars()['mForMax'+str(i)],vars()['mForMin'+str(i)])
+    n2Combi = np.append(vars()['New_nForMax'+str(i)],vars()['New_nForMin'+str(i)])
             
-#     LambdaInds = LambdaCombi.argsort()
+    LambdaInds = LambdaCombi.argsort()
     
-#     LambdaCombi = LambdaCombi[LambdaInds[::1]]
-#     TMcombiUnCorr = TMcombiUnCorr[LambdaInds[::1]]
-#     TmCombiUnCorr = TmCombiUnCorr[LambdaInds[::1]]
-#     TMcombi = TMcombi[LambdaInds[::1]]
-#     TmCombi = TmCombi[LambdaInds[::1]]
-#     n1Combi = n1Combi[LambdaInds[::1]]
-#     d1Combi = d1Combi[LambdaInds[::1]]
-#     mCombi = mCombi[LambdaInds[::1]]
-#     d2Combi = d2Combi[LambdaInds[::1]]
-#     n2Combi = n2Combi[LambdaInds[::1]]
+    LambdaCombi = LambdaCombi[LambdaInds[::1]]
+    TMcombiUnCorr = TMcombiUnCorr[LambdaInds[::1]]
+    TmCombiUnCorr = TmCombiUnCorr[LambdaInds[::1]]
+    TMcombi = TMcombi[LambdaInds[::1]]
+    TmCombi = TmCombi[LambdaInds[::1]]
+    n1Combi = n1Combi[LambdaInds[::1]]
+    d1Combi = d1Combi[LambdaInds[::1]]
+    mCombi = mCombi[LambdaInds[::1]]
+    d2Combi = d2Combi[LambdaInds[::1]]
+    n2Combi = n2Combi[LambdaInds[::1]]
     
-#     d1ErrCombi = d1ErrCombi[LambdaInds[::1]]
-#     n1ErrCombi = n1ErrCombi[LambdaInds[::1]]
+    d1ErrCombi = d1ErrCombi[LambdaInds[::1]]
+    n1ErrCombi = n1ErrCombi[LambdaInds[::1]]
     
-#     d2ErrCombi = d2ErrCombi[LambdaInds[::1]]
+    d2ErrCombi = d2ErrCombi[LambdaInds[::1]]
     
-#     mErrCombi = np.array([])
-#     n2ErrCombi = np.array([])
+    mErrCombi = np.array([])
+    n2ErrCombi = np.array([])
     
-#     Per1 = F.AbsToPer(n1ErrCombi,n1Combi)
-#     Per2 = F.AbsToPer(d1ErrCombi,d1Combi)
+    Per1 = F.AbsToPer(n1ErrCombi,n1Combi)
+    Per2 = F.AbsToPer(d1ErrCombi,d1Combi)
     
-#     for k in range(len(LambdaCombi)):
-#         if Per1[k] < Per2[k]:
-#             mErrCombi = np.append(mErrCombi,F.PerToAbs(Per2[k],mCombi[k]))
-#             n2ErrCombi = np.append(n2ErrCombi,F.PerToAbs(Per2[k],n2Combi[k]))
-#         else:
-#             mErrCombi = np.append(mErrCombi,F.PerToAbs(Per1[k],mCombi[k]))
-#             n2ErrCombi = np.append(n2ErrCombi,F.PerToAbs(Per1[k],n2Combi[k]))
+    for k in range(len(LambdaCombi)):
+        if Per1[k] < Per2[k]:
+            mErrCombi = np.append(mErrCombi,F.PerToAbs(Per2[k],mCombi[k]))
+            n2ErrCombi = np.append(n2ErrCombi,F.PerToAbs(Per2[k],n2Combi[k]))
+        else:
+            mErrCombi = np.append(mErrCombi,F.PerToAbs(Per1[k],mCombi[k]))
+            n2ErrCombi = np.append(n2ErrCombi,F.PerToAbs(Per1[k],n2Combi[k]))
     
     
-#     Index = np.array([])
+    Index = np.array([])
     
-#     for k in range(len(LambdaCombi)):
-#         IndexVal = np.where(LambdaCombi[k] == np.around(xP,1))[0][0]
-#         Index = np.append(Index,IndexVal)
+    for k in range(len(LambdaCombi)):
+        IndexVal = np.where(LambdaCombi[k] == np.around(xP,1))[0][0]
+        Index = np.append(Index,IndexVal)
         
         
-#     Fval = 4 * n2Combi**2 * vars()['nS'+files1[0]][Index.astype(int)] * ((TMcombi + TmCombi)/(TMcombi*TmCombi))
-#     x = (Fval - np.sqrt(Fval**2 - ((n2Combi**2 - 1)**3  * (n2Combi**2 - vars()['nS'+files1[0]][Index.astype(int)]**4 ))))/ ((n2Combi-1)**3 * (n2Combi-vars()['nS'+files1[0]][Index.astype(int)]**2))
+    Fval = 4 * n2Combi**2 * vars()['nS'+files1[0]][Index.astype(int)] * ((TMcombi + TmCombi)/(TMcombi*TmCombi))
+    x = (Fval - np.sqrt(Fval**2 - ((n2Combi**2 - 1)**3  * (n2Combi**2 - vars()['nS'+files1[0]][Index.astype(int)]**4 ))))/ ((n2Combi-1)**3 * (n2Combi-vars()['nS'+files1[0]][Index.astype(int)]**2))
     
-#     kVal = (-LambdaCombi / (4 * np.pi * d2Combi)) * np.log(x)
-#     alphaVal = ((4 * np.pi * kVal) / LambdaCombi) * 1e7
+    kVal = (-LambdaCombi / (4 * np.pi * d2Combi)) * np.log(x)
+    alphaVal = ((4 * np.pi * kVal) / LambdaCombi) * 1e7
     
-#     alphaVal2 = -1 * (np.log(x) / d2Combi) * 1e7
+    alphaVal2 = -1 * (np.log(x) / d2Combi) * 1e7
     
     
-#     header = ['λ (nm)','TM','Tm','TM Corrected','Tm Corrected','n1','Δn1','d1 (nm)','Δd1 (nm)','m','Δm','d2 (nm)','Δd2 (nm)','n2','Δn2','κ','α1 (cm^-1)','α2 (cm^-1)','discarded']
-#     header1 = ['d1Avg (nm)','Δd1(nm)','d2Avg (nm)','Δd2 (nm)']
-#     header2 = ['λ (nm)','Traw','TM','Tm','T true','hv','n true','α1 (cm^-1)','α2 (cm^-1)','α3 (cm^-1)','k']
+    header = ['λ (nm)','TM','Tm','TM Corrected','Tm Corrected','n1','Δn1','d1 (nm)','Δd1 (nm)','m','Δm','d2 (nm)','Δd2 (nm)','n2','Δn2','κ','α1 (cm^-1)','α2 (cm^-1)','discarded']
+    header1 = ['d1Avg (nm)','Δd1(nm)','d2Avg (nm)','Δd2 (nm)']
+    header2 = ['λ (nm)','Traw','TM','Tm','T true','hv','n true','α1 (cm^-1)','α2 (cm^-1)','α3 (cm^-1)','k']
     
-#     with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
+    with open('CSVout/'+files[i]+ '.csv','w', encoding='utf-8-sig', newline='') as f:
         
-#         writer = csv.writer(f)
+        writer = csv.writer(f)
         
-#         writer.writerow(header)
+        writer.writerow(header)
     
-#         for k in range(len(LambdaCombi)):
-#             if np.isin(LambdaCombi[k],RejectedLambdasD2) == True:
+        for k in range(len(LambdaCombi)):
+            if np.isin(LambdaCombi[k],RejectedLambdasD2) == True:
                 
-#                 data = [LambdaCombi[k],TMcombiUnCorr[k],TmCombiUnCorr[k],
-#                         TMcombi[k],TmCombi[k], 
-#                         n1Combi[k],n1ErrCombi[k],d1Combi[k],d1ErrCombi[k],mCombi[k],mErrCombi[k], 
-#                         d2Combi[k],d2ErrCombi[k],n2Combi[k],n2ErrCombi[k],kVal[k],alphaVal[k],alphaVal2[k],"yes"]
+                data = [LambdaCombi[k],TMcombiUnCorr[k],TmCombiUnCorr[k],
+                        TMcombi[k],TmCombi[k], 
+                        n1Combi[k],n1ErrCombi[k],d1Combi[k],d1ErrCombi[k],mCombi[k],mErrCombi[k], 
+                        d2Combi[k],d2ErrCombi[k],n2Combi[k],n2ErrCombi[k],kVal[k],alphaVal[k],alphaVal2[k],"yes"]
                 
-#                 writer.writerow(data)
+                writer.writerow(data)
 
-#             else:
+            else:
                 
-#                 data = [LambdaCombi[k],TMcombiUnCorr[k],TmCombiUnCorr[k],
-#                         TMcombi[k],TmCombi[k], 
-#                         n1Combi[k],n1ErrCombi[k],d1Combi[k],d1ErrCombi[k],mCombi[k],mErrCombi[k],
-#                         d2Combi[k],d2ErrCombi[k],n2Combi[k],n2ErrCombi[k],kVal[k],alphaVal[k],alphaVal2[k],"no"]
+                data = [LambdaCombi[k],TMcombiUnCorr[k],TmCombiUnCorr[k],
+                        TMcombi[k],TmCombi[k], 
+                        n1Combi[k],n1ErrCombi[k],d1Combi[k],d1ErrCombi[k],mCombi[k],mErrCombi[k],
+                        d2Combi[k],d2ErrCombi[k],n2Combi[k],n2ErrCombi[k],kVal[k],alphaVal[k],alphaVal2[k],"no"]
                 
-#                 writer.writerow(data)
+                writer.writerow(data)
 
-#     with open('CSVout/Thickness/'+files[i]+ '_Thickness.csv','w', encoding='utf-8-sig', newline='') as f1:
+    with open('CSVout/Thickness/'+files[i]+ '_Thickness.csv','w', encoding='utf-8-sig', newline='') as f1:
         
-#         writer = csv.writer(f1)
-#         writer.writerow(header1)
-#         data = [d1Avg,d1Error,d2Avg,d2Error]
-#         writer.writerow(data)
+        writer = csv.writer(f1)
+        writer.writerow(header1)
+        data = [d1Avg,d1Error,d2Avg,d2Error]
+        writer.writerow(data)
         
-#     Trn = np.sqrt((vars()['yPMax'+str(i)]  * vars()['yPMin'+str(i)]))
+    Trn = np.sqrt((vars()['yPMax'+str(i)]  * vars()['yPMin'+str(i)]))
     
 
-#     H = ((4 * vars()['nS'+files1[0]]**2) / ((vars()['nS'+files1[0]]**2 + 1) * (Trn**2))) - (((vars()['nS'+files1[0]]**2) + 1) / 2)
+    H = ((4 * vars()['nS'+files1[0]]**2) / ((vars()['nS'+files1[0]]**2 + 1) * (Trn**2))) - (((vars()['nS'+files1[0]]**2) + 1) / 2)
 
     
-#     nTrn = np.sqrt((H + np.sqrt(((H**2) - (vars()['nS'+files1[0]]**2))))) 
+    nTrn = np.sqrt((H + np.sqrt(((H**2) - (vars()['nS'+files1[0]]**2))))) 
     
-#     # #hv is identical for all measuremnts 
-#     hv = ((h * c) / (xP * 1e-9)) * 6.242e18
-#     alpha3 = ((np.log((1/Trn))) / d2Avg) * 1e7
+    # #hv is identical for all measuremnts 
+    hv = ((h * c) / (xP * 1e-9)) * 6.242e18
+    alpha3 = ((np.log((1/Trn))) / d2Avg) * 1e7
     
-#     k = (alpha3*xP / 4*np.pi) / 1e7 
+    k = (alpha3*xP / 4*np.pi) / 1e7 
       
-#     yRawInterp = np.interp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)])
+    yRawInterp = np.interp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)])
     
-#     alphaValInterp = np.interp(xP,LambdaCombi,alphaVal)
-#     alphaVal2Interp = np.interp(xP,LambdaCombi,alphaVal2)
+    alphaValInterp = np.interp(xP,LambdaCombi,alphaVal)
+    alphaVal2Interp = np.interp(xP,LambdaCombi,alphaVal2)
     
-#     with open('CSVout/Absorption/'+files[i]+ '_Absorption.csv','w', encoding='utf-8-sig', newline='') as f2:
+    with open('CSVout/Absorption/'+files[i]+ '_Absorption.csv','w', encoding='utf-8-sig', newline='') as f2:
          
-#         writer = csv.writer(f2)
-#         writer.writerow(header2)
+        writer = csv.writer(f2)
+        writer.writerow(header2)
         
-#         for l in range(len(Trn)):
-#             data = [xP[l],yRawInterp[l],vars()['yPMax'+str(i)][l],vars()['yPMin'+str(i)][l],Trn[l],hv[l],nTrn[l],alphaValInterp[l],alphaVal2Interp[l],alpha3[l],k[l]]
-#             writer.writerow(data)
+        for l in range(len(Trn)):
+            data = [xP[l],yRawInterp[l],vars()['yPMax'+str(i)][l],vars()['yPMin'+str(i)][l],Trn[l],hv[l],nTrn[l],alphaValInterp[l],alphaVal2Interp[l],alpha3[l],k[l]]
+            writer.writerow(data)
 
             
     # vars()['df'+str(i)] = vars()['df'+str(i)].sort_values('λ')

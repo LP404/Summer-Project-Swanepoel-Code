@@ -3,21 +3,6 @@ from scipy.signal import argrelextrema
 from scipy.signal import lfilter, lfilter_zi, filtfilt, butter
 from scipy import stats
 from scipy.optimize import curve_fit
-import bezier
-
-def ceil(a, precision=0):
-    return np.true_divide(np.ceil(a * 10**precision), 10**precision)
-
-def floor(a, precision=0):
-    return np.true_divide(np.floor(a * 10**precision), 10**precision)
-
-def IntValSelector(xVals,yVals):
-    
-    index = np.where(xVals == xVals.astype('int32'))[0]
-    newX = xVals[index]
-    newY = yVals[index]
-    
-    return newX,newY
 
 def ArrayCondenser(x,y):
       newXarray = np.array([])
@@ -81,11 +66,11 @@ def LineValFinder(xArray,yArray,guage,setting,xMin,xMax,inverse):
         ySec = yNew[point - guage : point + guage] 
          
          
-        final = stats.linregress(xSec,ySec)
+        m,c,r,p,err = stats.linregress(xSec,ySec)
         
         
          
-        return final.slope,final.intercept,final.stderr,final.intercept_stderr
+        return m,c,err
 
 def LineIntersection(line1, line2):
     xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
@@ -568,24 +553,11 @@ def quarterEllipseFinder(x,a,b,x0,y0):
     y = y0 + (((b/a) * (np.sqrt((a**2-((x-x0)**2))))))
     return y
     
-# def logCurve(x,a,b,c):
-    
-#     y = np.emath.logn(a,x-c) + b
-        
-#     return y 
-
 def logCurve(x,a,b,c):
     
     y = np.emath.logn(a,x-c) + b
-    
-    y = np.real(y)
-    
-    loc = np.where(y == min(y))[0][0]
-    
-    y[:loc+1] = 0
         
-    return y
-
+    return y 
 
 #Note define an x before passing in
 def LineComp(x,m1,m2,c1,c2,delta):
@@ -612,107 +584,9 @@ def LineComp(x,m1,m2,c1,c2,delta):
                 pass
     return MaxOccur, m1Index, m2Index
 
-def ReinterpAgain(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,IsMin):
-    
-    if IsMin == True:
-        CutOff = np.around(floor(AntiNodeY[0],1) - 0.05,2)
-
-        Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
-        
-        xNuvo = np.append(xArray[Loc],AntiNodeX)
-        yNuvo = np.append(yArray[Loc],AntiNodeY)
-            
-        Sort = np.argsort(xNuvo)
-        xNuvo = xNuvo[Sort[::1]]
-        yNuvo = yNuvo[Sort[::1]]
-        
-        nodes = np.vstack((xNuvo, yNuvo))
-        curve = bezier.Curve(nodes, degree= len(xNuvo)-1)
-        vals = np.linspace(0.0,1.0,len(xInterp))
-        
-        FinalXA = curve.evaluate_multi(vals)[0]
-        FinalYA = curve.evaluate_multi(vals)[1]
-        
-        FinalX = np.append(xArray[0:Loc],FinalXA)
-        FinalY = np.append(yArray[0:Loc],FinalYA)
-        
-        yInterp = np.interp(xInterp,FinalX, FinalY)
-    
-    else:
- 
-
-        Loc2 = np.where(xArray == AntiNodeX[0] - 1)[0][0]
-
-
-        xCheat = np.append(xArray[Loc2],AntiNodeX[0:2])
-        yCheat = np.append(yArray[Loc2],AntiNodeY[0:2])
-            
-        Sort = np.argsort(xCheat)
-        xCheat = xCheat[Sort[::1]]
-        yCheat = yCheat[Sort[::1]]      
-
-        nodes = np.vstack((xCheat, yCheat))
-        curve = bezier.Curve(nodes, degree= len(xCheat)-1)
-        vals = np.linspace(0.0,1.0,10001)
-        curve.evaluate_multi(vals)
-        
-        FinalXA = curve.evaluate_multi(vals)[0]
-        FinalYA = curve.evaluate_multi(vals)[1]
-        
-        FinalXB = np.append(xArray[0:Loc2],FinalXA)
-        FinalYB = np.append(yArray[0:Loc2],FinalYA)
-        
-        xNuvo = AntiNodeX
-        yNuvo = AntiNodeY
-            
-        Sort2 = np.argsort(xNuvo)
-        xNuvo = xNuvo[Sort2[::1]]
-        yNuvo = yNuvo[Sort2[::1]]
-        
-        nodes2 = np.vstack((xNuvo, yNuvo))
-        curve2 = bezier.Curve(nodes2, degree= len(xNuvo)-1)
-        vals2 = np.linspace(0.0,1.0,len(xInterp))
-        
-        FinalXC = curve2.evaluate_multi(vals2)[0]
-        FinalYC = curve2.evaluate_multi(vals2)[1]
-        
-        Val = max(FinalXB)
-        Loc3 = np.where(FinalXC == FindNearestVal(FinalXC,Val))[0][0]
-        
-        FinalX = np.append(FinalXB,FinalXC[Loc3:])
-        FinalY = np.append(FinalYB,FinalYC[Loc3:])
-        
-        yInterp = np.interp(xInterp,FinalX, FinalY)
-        
-    return yInterp
-
-def LegacyFancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,BoolMinima):
-    
-    #Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
-    
-    if BoolMinima == True:
-        Loc = max(np.where(yArray < AntiNodeY[0])[0])
-    else: 
-        Loc = np.where(xArray ==  AntiNodeX[0])[0][0]
-        
-    #Loc = max(np.where((np.around(yArray,2) == 0.50) | (np.around(yArray,2) == 0.49) | (np.around(yArray,2) == 0.51))[0])
-    
-    #0.5 is currently arbiraty, but frindges don't usually appear until after 50% transmission
-    
-    x1 = np.append(xArray[0:Loc],AntiNodeX)
-    y1 = np.append(yArray[0:Loc],AntiNodeY)
-        
-    Sort = np.argsort(x1)
-    x1 = x1[Sort[::1]]
-    y1 = y1[Sort[::1]]
-        
-    yInterp = np.interp(xInterp,x1,y1)
-    
-    return yInterp
-
-def Reinterp(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
-    
-    CutOff = floor(AntiNodeY[0],1)
+def Reinterp(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,CutOff):
+    #Since we know the cutoff is 0.6
+    #Given we know how the array is constructed we can assume the next index is for the first maxima/minima
 
     Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
     

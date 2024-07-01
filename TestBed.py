@@ -5,140 +5,191 @@ import Functions as F
 import Functions1 as F1
 import csv
 from scipy.optimize import curve_fit
-import TestArrays as TA
-import bezier
 
+def Reinterp(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,CutOff):
+    #Since we know the cutoff is 0.6
+    #Given we know how the array is constructed we can assume the next index is for the first maxima/minima
 
-def my_ceil(a, precision=0):
-    return np.true_divide(np.ceil(a * 10**precision), 10**precision)
-
-def my_floor(a, precision=0):
-    return np.true_divide(np.floor(a * 10**precision), 10**precision)
-
-
-
-
-def ReinterpAgain(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,IsMin):
+    Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
     
-    if IsMin == True:
-        CutOff = np.around(my_floor(AntiNodeY[0],1) - 0.05,2)
+    xNuvo = np.append(xArray[0:Loc],AntiNodeX)
+    yNuvo = np.append(yArray[0:Loc],AntiNodeY)
+        
+    Sort = np.argsort(xNuvo)
+    xNuvo = xNuvo[Sort[::1]]
+    yNuvo = yNuvo[Sort[::1]]
 
-        Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
-        
-        xNuvo = np.append(xArray[Loc],AntiNodeX)
-        yNuvo = np.append(yArray[Loc],AntiNodeY)
-            
-        Sort = np.argsort(xNuvo)
-        xNuvo = xNuvo[Sort[::1]]
-        yNuvo = yNuvo[Sort[::1]]
-        
-        nodes = np.vstack((xNuvo, yNuvo))
-        curve = bezier.Curve(nodes, degree= len(xNuvo)-1)
-        vals = np.linspace(0.0,1.0,len(xInterp))
-        
-        FinalXA = curve.evaluate_multi(vals)[0]
-        FinalYA = curve.evaluate_multi(vals)[1]
-        
-        FinalXB = np.append(xArray[0:Loc],FinalXA)
-        FinalYB = np.append(yArray[0:Loc],FinalYA)
-        
-        
-        xLims = np.array([AntiNodeX[-2],AntiNodeX[-1]])
-        yLims = np.array([AntiNodeY[-2],AntiNodeY[-1]])
-        
-        LocStart = np.where(FinalXB == F.FindNearestVal(FinalXB,xLims[0]))[0][0]
-        LocEnd = np.where(FinalXB == F.FindNearestVal(FinalXB,xLims[1]))[0][0]
-        poly = np.polyfit(FinalXB[LocStart:LocEnd+1],FinalYB[LocStart:LocEnd+1],4)
-        xValsLoc = np.where(xInterp == F.FindNearestVal(xInterp,xLims[1]))[0][0]
-        xVals = xInterp[xValsLoc+1:]
-        yValsCreation = np.poly1d(poly)
-        yVals = yValsCreation(xVals)
-        
-        FinalX = np.append(FinalXB,xVals)
-        FinalY = np.append(FinalYB,yVals)        
-        
-        yInterp = np.interp(xInterp,FinalX, FinalY)
+    yNuvoInd = np.where(yNuvo == F.FindNearestVal(yNuvo,CutOff))[0][0]
+    y1 = yNuvo[yNuvoInd - 4]
+    x1 = xNuvo[yNuvoInd - 4]
+    y2 = yNuvo[yNuvoInd + 1]
+    x2 = xNuvo[yNuvoInd + 1]
+    x0, y0, a, b, c = F.ellipseParamFinder(x1,y1,x2,y2)   
     
-    else:
+    xEllipse = np.arange(x1, x2+1, 1)
+    yEllipse = F.quarterEllipseFinder(xEllipse,a,b,x0,y0)
+        
+    guess = np.array([np.exp(1),1,260])
+    
+    yTopStart =   yNuvo[yNuvoInd+1:]
+    xTopStart =   xNuvo[yNuvoInd+1:]
+      
+    TransFit, Resi = curve_fit(F.logCurve,xTopStart, yTopStart,guess, maxfev=500000000)
+       
+    xTopStart2 = np.arange(xNuvo[yNuvoInd +1], 801, 1)
+        
+    yFitbutIDK = F.logCurve(xTopStart2 , TransFit[0], TransFit[1], TransFit[2])
+
+    #Since step size is 1 we can use np.gradient
+    
+    #!!! Note: Change X values to cover all x points for final fit
+    
+    gradEllipse = np.gradient(yEllipse)
+    bEllipse = yEllipse - (gradEllipse*xEllipse)
+    
+    gradyFitbutIDK = np.gradient(yFitbutIDK)
+    bFitbutIDK = yFitbutIDK - (gradyFitbutIDK*xTopStart2)
  
+    allowance = 20
 
-        Loc2 = np.where(xArray == AntiNodeX[0] - 1)[0][0]
+    xArr = np.linspace(x0-allowance,x0+allowance,100001)
+    IncLoc = F.LineComp(xArr,gradEllipse,gradyFitbutIDK,bEllipse,bFitbutIDK,5)
 
 
-        xCheat = np.append(xArray[Loc2],AntiNodeX[0:2])
-        yCheat = np.append(yArray[Loc2],AntiNodeY[0:2])
-            
-        Sort = np.argsort(xCheat)
-        xCheat = xCheat[Sort[::1]]
-        yCheat = yCheat[Sort[::1]]      
+    yArr = (xArr*gradEllipse[IncLoc[1]] + bEllipse[IncLoc[1]])
+    yArr1 = (xArr*gradyFitbutIDK[IncLoc[2]] + bFitbutIDK[IncLoc[2]])
+    
+    xArr = np.round(xArr).astype(int)
 
-        nodes = np.vstack((xCheat, yCheat))
-        curve = bezier.Curve(nodes, degree= len(xCheat)-1)
-        vals = np.linspace(0.0,1.0,10001)
-        curve.evaluate_multi(vals)
-        
-        FinalXA = curve.evaluate_multi(vals)[0]
-        FinalYA = curve.evaluate_multi(vals)[1]
-        
-        FinalXB = np.append(xArray[0:Loc2],FinalXA)
-        FinalYB = np.append(yArray[0:Loc2],FinalYA)
-        
-        xNuvo = AntiNodeX
-        yNuvo = AntiNodeY
-            
-        Sort2 = np.argsort(xNuvo)
-        xNuvo = xNuvo[Sort2[::1]]
-        yNuvo = yNuvo[Sort2[::1]]
-        
-        nodes2 = np.vstack((xNuvo, yNuvo))
-        curve2 = bezier.Curve(nodes2, degree= len(xNuvo)-1)
-        vals2 = np.linspace(0.0,1.0,len(xInterp))
-        
-        FinalXC = curve2.evaluate_multi(vals2)[0]
-        FinalYC = curve2.evaluate_multi(vals2)[1]
-        
-        Val = max(FinalXB)
-        Loc3 = np.where(FinalXC == F.FindNearestVal(FinalXC,Val))[0][0]
-        
-        FinalXD = np.append(FinalXB,FinalXC[Loc3:])
-        FinalYD = np.append(FinalYB,FinalYC[Loc3:])
-        
-        
-        xLims = np.array([AntiNodeX[-2],AntiNodeX[-1]])
-        yLims = np.array([AntiNodeY[-2],AntiNodeY[-1]])
-        
-        LocStart = np.where(FinalXD == F.FindNearestVal(FinalXD,xLims[0]))[0][0]
-        LocEnd = np.where(FinalXD == F.FindNearestVal(FinalXD,xLims[1]))[0][0]
-        poly = np.polyfit(FinalXD[LocStart:LocEnd+1],FinalYD[LocStart:LocEnd+1],4)
-        xValsLoc = np.where(xInterp == F.FindNearestVal(xInterp,xLims[1]))[0][0]
-        xVals = xInterp[xValsLoc+1:]
-        yValsCreation = np.poly1d(poly)
-        yVals = yValsCreation(xVals)
-        
-        FinalX = np.append(FinalXD,xVals)
-        FinalY = np.append(FinalYD,yVals)  
-        
-        
-        yInterp = np.interp(xInterp,FinalX, FinalY)
-        
+    GeoMeanNewyArr = np.sqrt((yArr * yArr1))
     
-    
-    
+    newxArr, newGeoMeanNewyArr = F.ArrayCondenser(xArr,GeoMeanNewyArr)
 
+    np.savetxt('ErrorLogx0.txt',np.array([x0]))
+    np.savetxt('ErrorLogxEllipse.txt',xEllipse)
+    np.savetxt('ErrorLogyEllipse.txt',yEllipse)
+    np.savetxt('ErrorLogxTopStart2.txt',xTopStart2)
+    np.savetxt('ErrorLogyFitbutIDK.txt',yFitbutIDK)
+    np.savetxt('ErrorLognewxArr.txt',newxArr)
+    np.savetxt('ErrorLognewGeoMeanNewyArr.txt',newGeoMeanNewyArr)
+    np.savetxt('ErrorLogxArray.txt',xArray)
+    np.savetxt('ErrorLogyArray.txt',yArray)
     
     
     
+    
+    xStitched,yStitched = Stitcher(x0,xEllipse,yEllipse,xTopStart2,yFitbutIDK,newxArr,newGeoMeanNewyArr,xArray,yArray)
+    xStitchedFixed,yStitchedFixed = F.ArrayFix(xStitched,yStitched)
+   
+    yInterp = np.interp(xInterp,xStitchedFixed,yStitchedFixed)
+   
     return yInterp
 
+def Stitcher(x0,xElip,yElip,xCurveFit,yCurveFit,xLineFit,yLineFit,xOriginal,yOriginal):
+        
+    Cut = np.where(xLineFit == x0)[0][0]
+        
+    xLine1 = xLineFit[:Cut]
+    xLine2 = xLineFit[Cut:]
+    
+    yLine1 = yLineFit[:Cut]
+    yLine2 = yLineFit[Cut:]    
+    
+    LenVal1 = len(xElip)
+    LenVal2 = len(xCurveFit)
+    
+    ActualVal1 = len(xLine1)
+    ActualVal2 = len(xLine2)
+    
+    PadVal1 = abs(LenVal1 - ActualVal1)
+    PadVal2 = abs(LenVal2 - ActualVal2)
+    
+    if LenVal1 < ActualVal1:
+    
+        xPaddedElipAlt = np.append(np.zeros(PadVal1),xElip)
+        yPaddedElipAlt = np.append(np.zeros(PadVal1),yElip)
+    
+        MinValElipIndAlt = np.argmin(abs(yLine1 - yPaddedElipAlt))
+    
+        NewXElipAlt = xLine1[MinValElipIndAlt:]
+        NewYElipAlt = yLine1[MinValElipIndAlt:]
+        
+        NewXElip2Alt = xPaddedElipAlt[:MinValElipIndAlt]
+        NewYElip2Alt = yPaddedElipAlt[:MinValElipIndAlt]
+    
+        NewXElip2Alt = np.trim_zeros(NewXElip2Alt)
+        NewYElip2Alt = np.trim_zeros(NewYElip2Alt) 
+        
+        FinalXInterA = np.append(NewXElip2Alt,NewXElipAlt)
+        FinalYInterA = np.append(NewYElip2Alt,NewYElipAlt)
+    
+    else:
+        xPaddedElip = np.append(np.zeros(PadVal1),xLine1)
+        yPaddedElip = np.append(np.zeros(PadVal1),yLine1)
+    
+        MinValElipInd = np.argmin(abs(yElip-yPaddedElip))
+    
+        NewXElip = xPaddedElip[MinValElipInd:]
+        NewYElip = yPaddedElip[MinValElipInd:]
+        
+        NewXElip2 = xElip[:MinValElipInd]
+        NewYElip2 = yElip[:MinValElipInd]    
+    
+        FinalXInterA = np.append(NewXElip2,NewXElip)
+        FinalYInterA = np.append(NewYElip2,NewYElip)
+    
+    
+    
+    if LenVal2 < ActualVal2:
+    
+        xPaddedCurveAlt = np.append(xCurveFit,np.zeros(PadVal2))
+        yPaddedCurveAlt = np.append(yCurveFit,np.zeros(PadVal2))
+            
+        
+        MinValCurveInd = np.argmin(abs(yLine2-yPaddedCurveAlt))
+        
+        NewXCurveAlt = xLine2[:MinValCurveInd]
+        NewYCurveAlt = yLine2[:MinValCurveInd]  
+        
+        NewXCurve2Alt = xPaddedCurveAlt[MinValCurveInd:]
+        NewYCurve2Alt = yPaddedCurveAlt[MinValCurveInd:]      
+        
+        NewXCurve2Alt = np.trim_zeros(NewXCurve2Alt)
+        NewYCurve2Alt = np.trim_zeros(NewYCurve2Alt)   
+        
+        FinalXInterB = np.append(FinalXInterA,NewXCurveAlt)
+        FinalXInterC = np.append(FinalXInterB,NewXCurve2Alt)
+    
+        FinalYInterB = np.append(FinalYInterA,NewYCurveAlt)
+        FinalYInterC = np.append(FinalYInterB,NewYCurve2Alt)
+        
+    else: 
+    
+        xPaddedCurve = np.append(xLine2,np.zeros(PadVal2))
+        yPaddedCurve = np.append(yLine2,np.zeros(PadVal2))
+            
+        
+        MinValCurveInd = np.argmin(abs(yCurveFit-yPaddedCurve))
+        
+        NewXCurve = xPaddedCurve[:MinValCurveInd]
+        NewYCurve = yPaddedCurve[:MinValCurveInd]  
+        
+        NewXCurve2 = xCurveFit[MinValCurveInd:]
+        NewYCurve2 = yCurveFit[MinValCurveInd:]   
+        
+        FinalXInterB = np.append(FinalXInterA,NewXCurve)
+        FinalXInterC = np.append(FinalXInterB,NewXCurve2)
+    
+        FinalYInterB = np.append(FinalYInterA,NewYCurve)
+        FinalYInterC = np.append(FinalYInterB,NewYCurve2)
+    
+    
+    startInds = np.where(xOriginal < min(FinalXInterC))[0]
+    FinalX = np.append(xOriginal[startInds],FinalXInterC)
+    FinalY = np.append(yOriginal[startInds],FinalYInterC)
 
-# plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
-# plt.scatter(vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)], color = 'black', marker = "x", label = "Maxima")
-# plt.plot(xP,ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True))
-# plt.plot(xP,ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False))
 
-
-
-
+    return FinalX, FinalY
 
 
 #dt = 1
@@ -146,7 +197,7 @@ def ReinterpAgain(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,IsMin):
 h = 6.63e-34
 c = 3e8
 
-# #Importing and setting up data for processing
+#Importing and setting up data for processing
 
 path, dirs, files = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\Data'))
 path1, dirs1, files1 = next(os.walk(os.path.dirname(os.path.realpath('Code.py')) + '\\SubstrateData'))
@@ -318,168 +369,30 @@ for i in range(len(files)):
     # vars()['yNewMax'+str(i)] = vars()['yNewMaxUnCorr'+str(i)]
     # vars()['yNewMin'+str(i)] = vars()['yNewMinUnCorr'+str(i)]
 
-    # vars()['yPMaxAlt'+str(i)] = Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)])
-    # vars()['yPMinAlt'+str(i)] = Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)])
-
-    vars()['yPMaxAlt'+str(i)] = ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],False)
-    vars()['yPMinAlt'+str(i)] = ReinterpAgain(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],True)
+    vars()['yPMaxAlt'+str(i)] = Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)],0.6)
+    vars()['yPMinAlt'+str(i)] = Reinterp(xP,vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)],vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)],0.6)
 
 
-def logCurve(x,a,b,c):
+for i in range(len(files)):
+    # plt.figure(i,figsize=(29.7/2.54,21.0/2.54), dpi=600)
+    plt.figure(i,figsize = (8,5),dpi = 600)
+    plt.minorticks_on()
+    plt.grid(which='major', color='k', linestyle='-')
+    plt.grid(which='minor', color='darkgray', linestyle='--')
+    plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
+    plt.title(files[i])
+    plt.xlabel("Wavelength (nm)")
+    plt.ylabel("Transmission/Absorbance")
     
-    y = np.emath.logn(a,x-c) + b
+    # np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
+
+
+    plt.scatter(vars()['xNewMax'+str(i)] , vars()['yNewMaxUnCorr'+str(i)], color = 'black', marker = "x", label = "Maxima")
+    plt.scatter(vars()['xNewMin'+str(i)] , vars()['yNewMinUnCorr'+str(i)], color = 'red', marker = "x", label = "Minima")
+    plt.plot(xP,vars()['yPMaxAlt'+str(i)], color = 'grey', linestyle="dotted", label = "TM2")
+    plt.plot(xP,vars()['yPMinAlt'+str(i)], color = 'orange', linestyle="dotted", label = "Tm2")    
     
-    y = np.real(y)
+    plt.plot(xP,vars()['yP'+files1[0]], color = 'orange', label = "Substrate")
     
-    loc = np.where(y == min(y))[0][0]
+    plt.legend()
     
-    y[:loc+1] = 0
-        
-    return y
-
-
-def CubeFixFunction(x,y,x1,y1,error):
-    
-    error = 0.005
-    
-    
-    for j in range(len(y)): 
-        var = abs(np.mean(y1[np.where(x[j] == np.around(x1,1))[0]] - y[j]))
-        if var > error:
-            print(f'Error Occured at position  {j}' )
-        else:
-            print(f'Funtion Okay at {j}' )
-        
-    
-    
-    return
-
-
-
-# xInterp,xArray,yArray,AntiNodeX,AntiNodeY  = TA.HereAreArrays()
-
-# xInterp = np.loadtxt('xP.txt')
-# xArray = np.loadtxt('x.txt')
-# yArray = np.loadtxt('y.txt')
-# AntiNodeX = np.loadtxt('AntiX.txt')
-# AntiNodeY = np.loadtxt('AntiY.txt')
-
-
-# print
-
-# CutOff = my_floor(AntiNodeY[0],1)
-
-# #Since we know the cutoff is 0.6
-# #Given we know how the array is constructed we can assume the next index is for the first maxima/minima
-
-
-
-# Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
-
-# xNuvo = np.append(xArray[0:Loc],AntiNodeX)
-# yNuvo = np.append(yArray[0:Loc],AntiNodeY)
-    
-# Sort = np.argsort(xNuvo)
-# xNuvo = xNuvo[Sort[::1]]
-# yNuvo = yNuvo[Sort[::1]]
-
-# yNuvoInd = np.where(yNuvo == F.FindNearestVal(yNuvo,CutOff))[0][0]
-# y1 = yNuvo[yNuvoInd - 4]
-# x1 = xNuvo[yNuvoInd - 4]
-# y2 = yNuvo[yNuvoInd + 1]
-# x2 = xNuvo[yNuvoInd + 1]
-# x0, y0, a, b, c = F.ellipseParamFinder(x1,y1,x2,y2)   
-
-# xEllipse = np.arange(x1, x2+1, 1)
-# yEllipse = F.quarterEllipseFinder(xEllipse,a,b,x0,y0)
-    
-# guess = np.array([np.exp(1),1,260])
-
-# yTopStart =   yNuvo[yNuvoInd+1:]
-# xTopStart =   xNuvo[yNuvoInd+1:]
-  
-# TransFit, Resi = curve_fit(logCurve,xTopStart, yTopStart,guess, maxfev=500000000)
-   
-# xTopStart2 = np.arange(xNuvo[yNuvoInd +1], 801, 1)
-    
-# yFitbutIDK = F.logCurve(xTopStart2 , TransFit[0], TransFit[1], TransFit[2])
-
-# #Since step size is 1 we can use np.gradient
-
-# #!!! Note: Change X values to cover all x points for final fit
-
-# gradEllipse = np.gradient(yEllipse)
-# bEllipse = yEllipse - (gradEllipse*xEllipse)
-
-# gradyFitbutIDK = np.gradient(yFitbutIDK)
-# bFitbutIDK = yFitbutIDK - (gradyFitbutIDK*xTopStart2)
- 
-# allowance = 20
-
-# xArr = np.linspace(x0-allowance,x0+allowance,100001)
-# IncLoc = F.LineComp(xArr,gradEllipse,gradyFitbutIDK,bEllipse,bFitbutIDK,5)
-
-
-# yArr = (xArr*gradEllipse[IncLoc[1]] + bEllipse[IncLoc[1]])
-# yArr1 = (xArr*gradyFitbutIDK[IncLoc[2]] + bFitbutIDK[IncLoc[2]])
-
-# xArr = np.round(xArr).astype(int)
-
-# GeoMeanNewyArr = np.sqrt((yArr * yArr1))
-
-# newxArr, newGeoMeanNewyArr = F.ArrayCondenser(xArr,GeoMeanNewyArr)
-
-# xStitched,yStitched = Stitcher(x0,xEllipse,yEllipse,xTopStart2,yFitbutIDK,newxArr,newGeoMeanNewyArr,xArray,yArray)
-# xStitchedFixed,yStitchedFixed = F.ArrayFix(xStitched,yStitched)
-   
-# yInterp = np.interp(xInterp,xStitchedFixed,yStitchedFixed)
-   
-
-
-# plt.figure(0,figsize = (8,5),dpi = 600)
-# plt.minorticks_on()
-# plt.grid(which='major', color='k', linestyle='-')
-# plt.grid(which='minor', color='darkgray', linestyle='--')
-# plt.plot(xArray,yArray, label = "Filtered Data")
-# plt.title('MN1534')
-# plt.xlabel("Wavelength (nm)")
-# plt.ylabel("Transmission/Absorbance")
-
-# np.savetxt(str(files[i])+".csv", vars()[files[i]+'T'].T, delimiter=',')
-
-
-# plt.scatter(AntiNodeX,AntiNodeY, color = 'black', marker = "x", label = "Maxima")
-# plt.plot(xTopStart,yTopStart)
-# plt.plot(xInterp,yInterp, color = 'grey', linestyle="dotted", label = "TM2")  
-
-
-# np.exp(1),1,260
-plt.figure(0,figsize = (8,5),dpi = 600)
-plt.plot(xP,vars()['yP'+files1[0]], color = 'orange', label = "Substrate")
-plt.scatter(vars()['xNewMax'+str(i)],vars()['yNewMax'+str(i)], color = 'black', marker = "x", label = "Maxima")
-plt.scatter(vars()['xNewMin'+str(i)],vars()['yNewMin'+str(i)], color = 'black', marker = "x", label = "Maxima")
-
-# plt.scatter(vars()['MaxX'+str(i)], vars()['MaxY'+str(i)], color = 'black', marker = "x", label = "Maxima")
-# plt.scatter(vars()['MinX'+str(i)],vars()['MinY'+str(i)], color = 'black', marker = "x", label = "Minima") 
-
-# plt.scatter(vars()['xNewMax'+str(i)], vars()['yNewMaxUnCorr'+str(i)], color = 'black', marker = "x", label = "Maxima")
-# plt.scatter(vars()['xNewMin'+str(i)], vars()['yNewMinUnCorr'+str(i)], color = 'black', marker = "x", label = "Minima") 
-
-plt.plot(xP,vars()['yPMaxAlt'+str(i)], color = 'orange', label = "Max")
-plt.plot(xP,vars()['yPMinAlt'+str(i)], color = 'orange', label = "Min")
-
-
-plt.plot(vars()[files[i]+'T'][0],vars()['yFiltered'+str(i)], label = "Filtered Data")
-
-plt.legend()
-
-
-
-
-
-
-
-
-
-
-
