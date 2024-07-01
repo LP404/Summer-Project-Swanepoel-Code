@@ -1,0 +1,6 @@
+Energy 10keV
+Hole width 50 um
+Spot size 5.0
+Slit width 100um
+
+Notes: From 11-20 the lense was adjusted resulting in an overall inteneity increase of up to a factor of 8

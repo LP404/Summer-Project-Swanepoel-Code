@@ -1,0 +1,11 @@
+Exports in order
+x [0]
+y [1]
+std [2]
+active(?) [3]
+component functions (will be n long where n is number of component gaussians) [4+n] n No,peaks - 1
+model (sum of components) [5+n]
+x-correction(baseline?) [6+n]
+residuals [7+n]
+absolture residuals [8+n] 
+weigthed residuals [9+n]

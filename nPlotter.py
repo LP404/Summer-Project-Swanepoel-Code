@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as matcol
 import os
 import csv
 from scipy import stats
@@ -8,6 +9,8 @@ import math
 import Functions as F
 from sklearn.metrics import r2_score
 import nPlotterFunctions as nPF
+import random
+import matplotlib as mpl
 
 def CTI(value):
     return value/2.54
@@ -72,7 +75,7 @@ for i in range(len(files3)):
 
 
 LabList = ['α-Ga₂O₃','β-Ga₂O₃','κ-Ga₂O₃']
-LineColour = ['blue','green','red','black','gold','orange','salmon','silver','pink','teal','purple']
+LineColour = ['blue','green','purple','red','black','gold','orange','salmon','silver','pink','teal','magenta','darkgrey']
 
 xP = np.linspace(190,800, 10001)
 
@@ -96,7 +99,11 @@ if data != 0:
     num = len(files)
     plt.subplots_adjust(hspace=1,wspace=1)
     SubRow,SubCol = choose_subplot_dimensions(num)
-    plt.subplots(figsize=(15,12),sharex=True)
+    print(f'{LabList[0]}')
+    print(num)
+    print(SubRow)
+    print(SubCol)
+    plt.subplots(figsize=(21,18),sharex=True)
     plt.suptitle(LabList[0] + 'Refrative Index')
     for i in range(len(files)):
 
@@ -107,7 +114,10 @@ if data != 0:
         ax = plt.subplot(SubRow, SubCol, i + 1)
 
         # filter df and plot ticker on the new subplot axis
+        RanCol = random.choice(list(matcol.XKCD_COLORS.values()))
+        ax.errorbar(ListExtract(data[i],0),ListExtract(data[i],5),ListExtract(data[i],6),DeltaLam, color = RanCol ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
         ax.errorbar(ListExtract(data[i],0),ListExtract(data[i],13),ListExtract(data[i],14),DeltaLam, color = LineColour[i+1] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
+        ax.plot(xP, vars()[f"n1yFit {files[i]}"], '--',color = RanCol,label = f'n1 = {np.around(vars()[f"n1CoefList {files[i]}"][1],3)} + {np.around(vars()[f"n1CoefList {files[i]}"][0],3):.2e}/λ^2')
         ax.plot(xP, vars()[f"n2yFit {files[i]}"], '--',color = LineColour[i+1],label = f'n2 = {np.around(vars()[f"n2CoefList {files[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files[i]}"][0],3):.2e}/λ^2')
         ax.legend()
         ax.title.set_text(f'n2 for {files[i]}')
@@ -155,8 +165,12 @@ if data1 != 0:
     num1 = len(files1)
     plt.figure(2)
     plt.subplots_adjust(hspace=1,wspace=1)
-    SubRow,SubCol = choose_subplot_dimensions(num1)
-    plt.subplots(figsize=(15,12),sharex=True)
+    SubRow1,SubCol1 = choose_subplot_dimensions(num1)
+    print(f'{LabList[1]}')
+    print(num1)
+    print(SubRow1)
+    print(SubCol1)
+    plt.subplots(figsize=(21,18),sharex=True)
     plt.suptitle(LabList[1] + 'Refrative Index')
     for i in range(len(files1)):
 
@@ -164,10 +178,13 @@ if data1 != 0:
         plt.minorticks_on()
         plt.grid(which='major', color='k', linestyle='-')
         plt.grid(which='minor', color='darkgray', linestyle='--')
-        ax = plt.subplot(SubRow, SubCol, i + 1)
+        ax = plt.subplot(SubRow1, SubCol1, i + 1)
 
         # filter df and plot ticker on the new subplot axis
+        RanCol = random.choice(list(matcol.XKCD_COLORS.values()))
+        ax.errorbar(ListExtract(data1[i],0),ListExtract(data1[i],5),ListExtract(data1[i],6),DeltaLam, color = RanCol ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
         ax.errorbar(ListExtract(data1[i],0),ListExtract(data1[i],13),ListExtract(data1[i],14),DeltaLam, color = LineColour[i+1] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
+        ax.plot(xP, vars()[f"n1yFit {files1[i]}"], '--',color = random.choice(list(matcol.XKCD_COLORS.values())),label = f'n1 = {np.around(vars()[f"n1CoefList {files1[i]}"][1],3)} + {np.around(vars()[f"n1CoefList {files1[i]}"][0],3):.2e}/λ^2')
         ax.plot(xP, vars()[f"n2yFit {files1[i]}"], '--',color = LineColour[i+1],label = f'n2 = {np.around(vars()[f"n2CoefList {files1[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files1[i]}"][0],3):.2e}/λ^2')
         ax.legend()
         ax.title.set_text(f'n2 for {files1[i]}')
@@ -196,7 +213,7 @@ else:
 
 if data2 != 0:
     for i in range(len(files2)):
-        vars()[f"n1yFit {files2[i]}"], vars()[f"n2yFit {files2[i]}"], vars()[f"n2Cauch {files2[i]}"], vars()[f"n2Cauch {files2[i]}"], vars()[f"n2CoefList {files2[i]}"], vars()[f"n2CoefList {files2[i]}"] = nPF.CauchyFinder(files2[i],data2[i],xP,5,13,0)
+        vars()[f"n1yFit {files2[i]}"], vars()[f"n2yFit {files2[i]}"], vars()[f"n1Cauch {files2[i]}"], vars()[f"n2Cauch {files2[i]}"], vars()[f"n1CoefList {files2[i]}"], vars()[f"n2CoefList {files2[i]}"] = nPF.CauchyFinder(files2[i],data2[i],xP,5,13,0)
         # plt.figure(i + 17*len(files))
         # plt.minorticks_on()
         # plt.grid(which='major', color='k', linestyle='-')
@@ -211,11 +228,15 @@ if data2 != 0:
         # plt.legend()   
         # plt.plot()
         
-    # num2 = len(files2)
+    num2 = len(files2)
     plt.figure(3)
     plt.subplots_adjust(hspace=1,wspace=1)
-    SubRow,SubCol = choose_subplot_dimensions(num1)
-    plt.subplots(figsize=(15,12),sharex=True)
+    SubRow2,SubCol2 = choose_subplot_dimensions(num2)
+    print(f'{LabList[2]}')
+    print(num2)
+    print(SubRow2)
+    print(SubCol2)
+    plt.subplots(figsize=(21,18),sharex=True)
     plt.suptitle(LabList[2] + 'Refrative Index')
     for i in range(len(files2)):
 
@@ -223,10 +244,13 @@ if data2 != 0:
         plt.minorticks_on()
         plt.grid(which='major', color='k', linestyle='-')
         plt.grid(which='minor', color='darkgray', linestyle='--')
-        ax = plt.subplot(SubRow, SubCol, i + 1)
+        ax = plt.subplot(SubRow2, SubCol2, i + 1)
 
         # filter df and plot ticker on the new subplot axis
+        RanCol = random.choice(list(matcol.XKCD_COLORS.values()))
+        ax.errorbar(ListExtract(data2[i],0),ListExtract(data2[i],5),ListExtract(data2[i],6),DeltaLam, color = RanCol ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
         ax.errorbar(ListExtract(data2[i],0),ListExtract(data2[i],13),ListExtract(data2[i],14),DeltaLam, color = LineColour[i+1] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
+        ax.plot(xP, vars()[f"n1yFit {files2[i]}"], '--',color = random.choice(list(matcol.XKCD_COLORS.values())),label = f'n1 = {np.around(vars()[f"n1CoefList {files2[i]}"][1],3)} + {np.around(vars()[f"n1CoefList {files2[i]}"][0],3):.2e}/λ^2')
         ax.plot(xP, vars()[f"n2yFit {files2[i]}"], '--',color = LineColour[i+1],label = f'n2 = {np.around(vars()[f"n2CoefList {files2[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files2[i]}"][0],3):.2e}/λ^2')
         ax.legend()
         ax.title.set_text(f'n2 for {files2[i]}')
@@ -253,15 +277,21 @@ else:
 
 LabList = ['α-Ga₂O₃','β-Ga₂O₃','κ-Ga₂O₃']
 
-plt.figure(40)
+plt.figure(40,figsize=(CTI(16),CTI(16)), dpi=600)
 plt.minorticks_on()
-plt.xaxis.set_tick_params(which='major', size=10, width=2, direction='in', top='on')
-plt.xaxis.set_tick_params(which='minor', size=7, width=2, direction='in', top='on')
-plt.yaxis.set_tick_params(which='major', size=10, width=2, direction='in', right='on')
-plt.yaxis.set_tick_params(which='minor', size=7, width=2, direction='in', right='on')
-plt.title('n values for different Ga₂O₃ polymorphs')
-plt.ylabel('n (arb. units)')
-plt.xlabel(r'$\lambda$ (nm)')
+plt.grid(axis='both',which = 'major',linestyle=':', color = 'black')
+plt.grid(axis='both',which = 'minor',linestyle=':')
+plt.title('n values for different Ga₂O₃ polymorphs', fontsize = 14)
+plt.ylabel('n', fontsize = 14)
+plt.xlabel(r'$\lambda$ (nm)', fontsize = 14)
+
+label_size = 14
+mpl.rcParams['xtick.labelsize'] = label_size 
+
+label_size = 14
+mpl.rcParams['ytick.labelsize'] = label_size 
+
+
 for i in range(len(files)):
         plt.errorbar(ListExtract(data[i],0),ListExtract(data[i],13),ListExtract(data[i],14),DeltaLam, color = LineColour[i] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
         plt.plot(xP, vars()[f"n2yFit {files[i]}"], '--',color = LineColour[i],label = r'$n_{\alpha}$' + f'= {np.around(vars()[f"n2CoefList {files[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files[i]}"][0],3):.2e}/λ^2')
@@ -269,7 +299,10 @@ for i in range(len(files1)):
         plt.errorbar(ListExtract(data1[i],0),ListExtract(data1[i],13),ListExtract(data1[i],14),DeltaLam, color = LineColour[i+1] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
         plt.plot(xP, vars()[f"n2yFit {files1[i]}"], '--',color = LineColour[i+1],label = r'$n_{\beta}$' + f'= {np.around(vars()[f"n2CoefList {files1[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files1[i]}"][0],3):.2e}/λ^2')
 plt.legend()
-
+for i in range(len(files2)):
+        plt.errorbar(ListExtract(data2[i],0),ListExtract(data2[i],13),ListExtract(data2[i],14),DeltaLam, color = LineColour[i+2] ,fmt='o',ms = '4',ecolor='black', elinewidth=3, capsize=1)
+        plt.plot(xP, vars()[f"n2yFit {files2[i]}"], '--',color = LineColour[i+2],label = r'$n_{\kappa}$' + f'= {np.around(vars()[f"n2CoefList {files2[i]}"][1],3)} + {np.around(vars()[f"n2CoefList {files2[i]}"][0],3):.2e}/λ^2')
+plt.legend(fontsize = 16)
     
 # for i in range(len(files)):
 #     Loc = np.where((xP >= 380) & (xP<= 700))[0]

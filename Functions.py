@@ -1,6 +1,123 @@
 import numpy as np
 from scipy.signal import argrelextrema
 from scipy.signal import lfilter, lfilter_zi, filtfilt, butter
+from scipy import stats
+from scipy.optimize import curve_fit
+import bezier
+
+def ceil(a, precision=0):
+    return np.true_divide(np.ceil(a * 10**precision), 10**precision)
+
+def floor(a, precision=0):
+    return np.true_divide(np.floor(a * 10**precision), 10**precision)
+
+def IntValSelector(xVals,yVals):
+    
+    index = np.where(xVals == xVals.astype('int32'))[0]
+    newX = xVals[index]
+    newY = yVals[index]
+    
+    return newX,newY
+
+def ArrayCondenser(x,y):
+      newXarray = np.array([])
+      newYarray = np.array([])
+    
+      newXarray = np.append(newXarray,x[0])
+      backTotalCount = 0
+      backTotal = 0
+    
+      for i in range(1,len(x)):
+          if x[i] == x[i-1]:
+             backTotalCount += 1
+          else:   
+             newXarray = np.append(newXarray,x[i])
+             newYarray = np.append(newYarray,np.mean(y[backTotal:i]))
+             backTotal = backTotalCount + 1
+    
+    
+      backTotal = backTotalCount + 1
+      newYarray = np.append(newYarray,np.mean(y[backTotal:i]))
+    
+      return newXarray,newYarray
+
+def ArrayFix(x,y):
+    
+    x2 = np.array([x[0]])
+    y2 = np.array([y[0]])
+    
+    for i in range(1,len(x)):
+        if x[i] != x[i-1]:
+            x2 = np.append(x2,x[i])
+            y2 = np.append(y2,y[i])
+        else:
+            yHold = (y[i] + y[i-1]) / 2
+            y2[i-1] = yHold
+    
+    return x2, y2
+
+def LineValFinder(xArray,yArray,guage,setting,xMin,xMax,inverse):
+    
+    if xMin > max(xArray) or xMax < min(xArray):
+        return print('Error incorrect Max/Min values max: '+str(max(xArray))+' vs stated of '+str(xMax)+' and min: '+str(min(xArray))+' vs stated of '+str(xMin))
+    else:   
+        if setting == 'min':
+            point = np.where(np.gradient(yArray) == min(np.gradient(yArray)))[0][0]      
+        elif setting == 'bg' and inverse == False:
+            allowed = np.where((xArray < xMax) & (xArray > xMin))[0]
+            xNew = xArray[allowed]
+            yNew = yArray[allowed]
+            point = np.where(np.gradient(yNew) == min(np.gradient(yNew)))[0][0]  
+        elif setting == 'bg' and inverse == True:
+            allowed = np.where((xArray < xMax) & (xArray > xMin))[0]
+            xNew = xArray[allowed]
+            yNew = yArray[allowed]
+            #Due to the conversion to eV, the graph is effectivley "reversed, i.e +/- graidents switch in value)
+            point = np.where(-np.gradient(yNew) == min(-np.gradient(yNew)))[0][0]  
+        else:
+            point = np.where(np.gradient(yArray) == max(np.gradient(yArray)))[0][0]
+            
+        xSec = xNew[point - guage : point + guage]
+        ySec = yNew[point - guage : point + guage] 
+         
+         
+        final = stats.linregress(xSec,ySec)
+        
+        
+         
+        return final.slope,final.intercept,final.stderr,final.intercept_stderr
+
+def LineIntersection(line1, line2):
+    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+    def det(a, b):
+        return a[0] * b[1] - a[1] * b[0]
+
+    div = det(xdiff, ydiff)
+    if div == 0:
+       raise Exception('lines do not intersect')
+
+    d = (det(*line1), det(*line2))
+    x = det(d, xdiff) / div
+    y = det(d, ydiff) / div
+    return x, y
+
+
+#Takes in two arrayes and finds all indices where one is in another
+#Assumes each value in the bigArray is unique
+def ValueFinder(guageArray,bigArray):
+    num = len(guageArray)
+    finalArrayInd = np.zeros(num)
+    for i in range(len(guageArray)):
+        guess = guageArray[i]
+        point = np.where(guess == bigArray)[0][0]
+        finalArrayInd[i] = int(point)
+        
+        
+    finalArrayInd = finalArrayInd.astype(int)
+    return finalArrayInd
+
 
 def Trim(Array,start,end):
     delPoints = np.where((Array[0] < start) | (Array[0] > end))[0]
@@ -18,6 +135,15 @@ def NoiseFilter(Val1,Val2,yArray):
     yFiltered = filtfilt(b, a, yArray)
     
     return yFiltered
+
+def Richards(x,A,K,B,v,Q,C):
+    num = K - A
+    denA = C + (Q*(np.exp((-B*x))))
+    denB = denA**(1/v)
+    frac = num/denB
+    final = A + frac
+    
+    return final
 
 def FancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,BoolMinima):
     
@@ -428,6 +554,344 @@ def n2Uncert(d,m,Lam,dUncert,mUncert,LamUncert,n):
     
     return nUncert
 
+def ellipseParamFinder(x1,y1,x2,y2):
+    line1 = [[200,y1] , [800,y1]]
+    line2 = [[x2,0] , [x2,1]]
+    x0, y0 = LineIntersection(line1 ,line2)
+    a = abs(x1-x0)
+    b = abs(y2-y0)
+    c = np.sqrt((a**2 + b**2))
+    
+    return x0,y0,a,b,c
+
+def quarterEllipseFinder(x,a,b,x0,y0):
+    y = y0 + (((b/a) * (np.sqrt((a**2-((x-x0)**2))))))
+    return y
+    
+# def logCurve(x,a,b,c):
+    
+#     y = np.emath.logn(a,x-c) + b
+        
+#     return y 
+
+def logCurve(x,a,b,c):
+    
+    y = np.emath.logn(a,x-c) + b
+    
+    y = np.real(y)
+    
+    loc = np.where(y == min(y))[0][0]
+    
+    y[:loc+1] = 0
+        
+    return y
+
+
+#Note define an x before passing in
+def LineComp(x,m1,m2,c1,c2,delta):
+    m1Index = 0
+    m2Index = 0
+    MaxOccur = 0
+    for i in range(len(m1)):
+        y1 = m1[i]*x + c1[i]
+        for j in range(len(m2)):
+            y2 = m2[j]*x + c2[j]
+            checkArray = y1/y2
+            for k in range(len(checkArray)):
+                if checkArray[k] < 1:
+                    checkArray[k] = (1 / checkArray[k])
+                else:
+                    pass
+                
+            oneOccur = np.count_nonzero(np.around(checkArray,delta) == 1)
+            if oneOccur > MaxOccur:
+                m1Index = i
+                m2Index = j
+                MaxOccur = oneOccur
+            else:
+                pass
+    return MaxOccur, m1Index, m2Index
+
+def ReinterpAgain(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,IsMin):
+    
+    if IsMin == True:
+        CutOff = np.around(floor(AntiNodeY[0],1) - 0.05,2)
+
+        Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
+        
+        xNuvo = np.append(xArray[Loc],AntiNodeX)
+        yNuvo = np.append(yArray[Loc],AntiNodeY)
+            
+        Sort = np.argsort(xNuvo)
+        xNuvo = xNuvo[Sort[::1]]
+        yNuvo = yNuvo[Sort[::1]]
+        
+        nodes = np.vstack((xNuvo, yNuvo))
+        curve = bezier.Curve(nodes, degree= len(xNuvo)-1)
+        vals = np.linspace(0.0,1.0,len(xInterp))
+        
+        FinalXA = curve.evaluate_multi(vals)[0]
+        FinalYA = curve.evaluate_multi(vals)[1]
+        
+        FinalX = np.append(xArray[0:Loc],FinalXA)
+        FinalY = np.append(yArray[0:Loc],FinalYA)
+        
+        yInterp = np.interp(xInterp,FinalX, FinalY)
+    
+    else:
+ 
+
+        Loc2 = np.where(xArray == AntiNodeX[0] - 1)[0][0]
+
+
+        xCheat = np.append(xArray[Loc2],AntiNodeX[0:2])
+        yCheat = np.append(yArray[Loc2],AntiNodeY[0:2])
+            
+        Sort = np.argsort(xCheat)
+        xCheat = xCheat[Sort[::1]]
+        yCheat = yCheat[Sort[::1]]      
+
+        nodes = np.vstack((xCheat, yCheat))
+        curve = bezier.Curve(nodes, degree= len(xCheat)-1)
+        vals = np.linspace(0.0,1.0,10001)
+        curve.evaluate_multi(vals)
+        
+        FinalXA = curve.evaluate_multi(vals)[0]
+        FinalYA = curve.evaluate_multi(vals)[1]
+        
+        FinalXB = np.append(xArray[0:Loc2],FinalXA)
+        FinalYB = np.append(yArray[0:Loc2],FinalYA)
+        
+        xNuvo = AntiNodeX
+        yNuvo = AntiNodeY
+            
+        Sort2 = np.argsort(xNuvo)
+        xNuvo = xNuvo[Sort2[::1]]
+        yNuvo = yNuvo[Sort2[::1]]
+        
+        nodes2 = np.vstack((xNuvo, yNuvo))
+        curve2 = bezier.Curve(nodes2, degree= len(xNuvo)-1)
+        vals2 = np.linspace(0.0,1.0,len(xInterp))
+        
+        FinalXC = curve2.evaluate_multi(vals2)[0]
+        FinalYC = curve2.evaluate_multi(vals2)[1]
+        
+        Val = max(FinalXB)
+        Loc3 = np.where(FinalXC == FindNearestVal(FinalXC,Val))[0][0]
+        
+        FinalX = np.append(FinalXB,FinalXC[Loc3:])
+        FinalY = np.append(FinalYB,FinalYC[Loc3:])
+        
+        yInterp = np.interp(xInterp,FinalX, FinalY)
+        
+    return yInterp
+
+def LegacyFancyInterpolate(xInterp,xArray,yArray,AntiNodeX,AntiNodeY,BoolMinima):
+    
+    #Loc0 = np.where((np.diff(yArray) / max(np.diff(yArray))) == 1)[0][0]
+    
+    if BoolMinima == True:
+        Loc = max(np.where(yArray < AntiNodeY[0])[0])
+    else: 
+        Loc = np.where(xArray ==  AntiNodeX[0])[0][0]
+        
+    #Loc = max(np.where((np.around(yArray,2) == 0.50) | (np.around(yArray,2) == 0.49) | (np.around(yArray,2) == 0.51))[0])
+    
+    #0.5 is currently arbiraty, but frindges don't usually appear until after 50% transmission
+    
+    x1 = np.append(xArray[0:Loc],AntiNodeX)
+    y1 = np.append(yArray[0:Loc],AntiNodeY)
+        
+    Sort = np.argsort(x1)
+    x1 = x1[Sort[::1]]
+    y1 = y1[Sort[::1]]
+        
+    yInterp = np.interp(xInterp,x1,y1)
+    
+    return yInterp
+
+def Reinterp(xInterp,xArray,yArray,AntiNodeX,AntiNodeY):
+    
+    CutOff = floor(AntiNodeY[0],1)
+
+    Loc = max(np.where((np.around(yArray,2) == CutOff) | (np.around(yArray,2) == CutOff-0.01) | (np.around(yArray,2) == CutOff+0.01))[0])
+    
+    
+    xNuvo = np.append(xArray[0:Loc],AntiNodeX)
+    yNuvo = np.append(yArray[0:Loc],AntiNodeY)
+        
+    Sort = np.argsort(xNuvo)
+    xNuvo = xNuvo[Sort[::1]]
+    yNuvo = yNuvo[Sort[::1]]
+
+
+    yNuvoInd = np.where(yNuvo == FindNearestVal(yNuvo,CutOff))[0][0]
+    y1 = yNuvo[yNuvoInd - 4]
+    x1 = xNuvo[yNuvoInd - 4]
+    y2 = yNuvo[yNuvoInd + 1]
+    x2 = xNuvo[yNuvoInd + 1]
+    x0, y0, a, b, c = ellipseParamFinder(x1,y1,x2,y2)   
+    
+    xEllipse = np.arange(x1, x2+1, 1)
+    yEllipse = quarterEllipseFinder(xEllipse,a,b,x0,y0)
+        
+    guess = np.array([np.exp(1),1,260])
+    
+
+    yTopStart =   yNuvo[yNuvoInd+1:]
+    xTopStart =   xNuvo[yNuvoInd+1:]
+    
+    
+    TransFit, Resi = curve_fit(logCurve,xTopStart, yTopStart,guess, maxfev=500000000)
+       
+    xTopStart2 = np.arange(xNuvo[yNuvoInd +1], 801, 1)
+        
+    yFitbutIDK = logCurve(xTopStart2 , TransFit[0], TransFit[1], TransFit[2])
+
+    
+    
+    
+    
+    #Since step size is 1 we can use np.gradient
+    
+    #!!! Note: Change X values to cover all x points for final fit
+    
+
+    gradEllipse = np.gradient(yEllipse)
+    bEllipse = yEllipse - (gradEllipse*xEllipse)
+    
+    gradyFitbutIDK = np.gradient(yFitbutIDK)
+    bFitbutIDK = yFitbutIDK - (gradyFitbutIDK*xTopStart2)
+ 
+    allowance = 20
+
+    xArr = np.linspace(x0-allowance,x0+allowance,100001)
+    IncLoc = LineComp(xArr,gradEllipse,gradyFitbutIDK,bEllipse,bFitbutIDK,5)
+
+
+
+    yArr = (xArr*gradEllipse[IncLoc[1]] + bEllipse[IncLoc[1]])
+    yArr1 = (xArr*gradyFitbutIDK[IncLoc[2]] + bFitbutIDK[IncLoc[2]])
+    
+    xArr = np.round(xArr).astype(int)
+
+    GeoMeanNewyArr = np.sqrt((yArr * yArr1))
+    
+
+    newxArr, newGeoMeanNewyArr = ArrayCondenser(xArr,GeoMeanNewyArr)
+
+    xStitched,yStitched = Stitcher(x0,xEllipse,yEllipse,xTopStart2,yFitbutIDK,newxArr,newGeoMeanNewyArr,xArray,yArray)
+    xStitchedFixed,yStitchedFixed = ArrayFix(xStitched,yStitched)
+   
+    yInterp = np.interp(xInterp,xStitchedFixed,yStitchedFixed)
+   
+    return yInterp
+
+def Stitcher(x0,xElip,yElip,xCurveFit,yCurveFit,xLineFit,yLineFit,xOriginal,yOriginal):
+        
+    Cut = np.where(xLineFit == x0)[0][0]
+        
+    xLine1 = xLineFit[:Cut]
+    xLine2 = xLineFit[Cut:]
+    
+    yLine1 = yLineFit[:Cut]
+    yLine2 = yLineFit[Cut:]    
+    
+    LenVal1 = len(xElip)
+    LenVal2 = len(xCurveFit)
+    
+    ActualVal1 = len(xLine1)
+    ActualVal2 = len(xLine2)
+    
+    PadVal1 = abs(LenVal1 - ActualVal1)
+    PadVal2 = abs(LenVal2 - ActualVal2)
+    
+    if LenVal1 < ActualVal1:
+    
+        xPaddedElipAlt = np.append(np.zeros(PadVal1),xElip)
+        yPaddedElipAlt = np.append(np.zeros(PadVal1),yElip)
+    
+        MinValElipIndAlt = np.argmin(abs(yLine1 - yPaddedElipAlt))
+    
+        NewXElipAlt = xLine1[MinValElipIndAlt:]
+        NewYElipAlt = yLine1[MinValElipIndAlt:]
+        
+        NewXElip2Alt = xPaddedElipAlt[:MinValElipIndAlt]
+        NewYElip2Alt = yPaddedElipAlt[:MinValElipIndAlt]
+    
+        NewXElip2Alt = np.trim_zeros(NewXElip2Alt)
+        NewYElip2Alt = np.trim_zeros(NewYElip2Alt) 
+        
+        FinalXInterA = np.append(NewXElip2Alt,NewXElipAlt)
+        FinalYInterA = np.append(NewYElip2Alt,NewYElipAlt)
+    
+    else:
+        xPaddedElip = np.append(np.zeros(PadVal1),xLine1)
+        yPaddedElip = np.append(np.zeros(PadVal1),yLine1)
+    
+        MinValElipInd = np.argmin(abs(yElip-yPaddedElip))
+    
+        NewXElip = xPaddedElip[MinValElipInd:]
+        NewYElip = yPaddedElip[MinValElipInd:]
+        
+        NewXElip2 = xElip[:MinValElipInd]
+        NewYElip2 = yElip[:MinValElipInd]    
+    
+        FinalXInterA = np.append(NewXElip2,NewXElip)
+        FinalYInterA = np.append(NewYElip2,NewYElip)
+    
+    
+    
+    if LenVal2 < ActualVal2:
+    
+        xPaddedCurveAlt = np.append(xCurveFit,np.zeros(PadVal2))
+        yPaddedCurveAlt = np.append(yCurveFit,np.zeros(PadVal2))
+            
+        
+        MinValCurveInd = np.argmin(abs(yLine2-yPaddedCurveAlt))
+        
+        NewXCurveAlt = xLine2[:MinValCurveInd]
+        NewYCurveAlt = yLine2[:MinValCurveInd]  
+        
+        NewXCurve2Alt = xPaddedCurveAlt[MinValCurveInd:]
+        NewYCurve2Alt = yPaddedCurveAlt[MinValCurveInd:]      
+        
+        NewXCurve2Alt = np.trim_zeros(NewXCurve2Alt)
+        NewYCurve2Alt = np.trim_zeros(NewYCurve2Alt)   
+        
+        FinalXInterB = np.append(FinalXInterA,NewXCurveAlt)
+        FinalXInterC = np.append(FinalXInterB,NewXCurve2Alt)
+    
+        FinalYInterB = np.append(FinalYInterA,NewYCurveAlt)
+        FinalYInterC = np.append(FinalYInterB,NewYCurve2Alt)
+        
+    else: 
+    
+        xPaddedCurve = np.append(xLine2,np.zeros(PadVal2))
+        yPaddedCurve = np.append(yLine2,np.zeros(PadVal2))
+            
+        
+        MinValCurveInd = np.argmin(abs(yCurveFit-yPaddedCurve))
+        
+        NewXCurve = xPaddedCurve[:MinValCurveInd]
+        NewYCurve = yPaddedCurve[:MinValCurveInd]  
+        
+        NewXCurve2 = xCurveFit[MinValCurveInd:]
+        NewYCurve2 = yCurveFit[MinValCurveInd:]   
+        
+        FinalXInterB = np.append(FinalXInterA,NewXCurve)
+        FinalXInterC = np.append(FinalXInterB,NewXCurve2)
+    
+        FinalYInterB = np.append(FinalYInterA,NewYCurve)
+        FinalYInterC = np.append(FinalYInterB,NewYCurve2)
+    
+    
+    startInds = np.where(xOriginal < min(FinalXInterC))[0]
+    FinalX = np.append(xOriginal[startInds],FinalXInterC)
+    FinalY = np.append(yOriginal[startInds],FinalYInterC)
+
+
+    return FinalX, FinalY
 
 def main():
     print('Do not run this directly')
